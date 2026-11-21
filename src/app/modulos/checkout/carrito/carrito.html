@@ -1,0 +1,105 @@
+<div class="min-h-screen bg-crema pb-24">
+  <app-barra-superior (abrirMenu)="menuAbierto = true" />
+
+  <div class="max-w-5xl mx-auto px-5 lg:px-6 pt-6 lg:pt-10">
+    <div class="flex items-center gap-3 mb-6">
+      <a
+        routerLink="/inicio"
+        class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-white text-cacao shadow-xs border border-cacao/10 hover:scale-105 transition shrink-0"
+        aria-label="Volver al inicio"
+      >
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+        </svg>
+      </a>
+      <h1 class="text-xl lg:text-3xl font-extrabold text-cacao">Mi Carrito</h1>
+    </div>
+
+    <main class="lg:bg-white lg:rounded-[2rem] lg:p-8 lg:shadow-xl lg:border lg:border-cacao/10">
+      @if (carritoService.items().length > 0) {
+        <div class="lg:grid lg:grid-cols-12 lg:gap-8">
+          <div class="lg:col-span-7 space-y-4">
+            @for (item of carritoService.items(); track $index) {
+              <div class="p-4 rounded-2xl bg-white lg:bg-crema border border-cacao/10 shadow-2xs flex items-center justify-between gap-4">
+                <div class="flex items-center gap-3 min-w-0">
+                  <img
+                    [src]="catalogoService.resolverUrlImagen(item.producto.imagenUrl)"
+                    [alt]="item.producto.nombre"
+                    class="w-14 h-14 object-contain shrink-0"
+                  />
+                  <div class="min-w-0">
+                    <h2 class="text-sm lg:text-base font-extrabold text-cacao truncate">{{ item.producto.nombre }}</h2>
+                    <p class="text-xs text-cacao/65">{{ item.producto.unidad }} · ${{ item.producto.precio }} MXN c/u</p>
+                    @if (item.notaEspecial) {
+                      <p class="text-[11px] text-milpa font-semibold truncate mt-0.5">Nota: {{ item.notaEspecial }}</p>
+                    }
+                    <p class="text-sm lg:text-base font-black text-salsa mt-1">
+                      ${{ item.producto.precio * item.cantidad }} MXN
+                    </p>
+                  </div>
+                </div>
+
+                <div class="flex items-center gap-2.5 bg-crema lg:bg-white px-3 py-1.5 rounded-full border border-cacao/15 shrink-0">
+                  <button
+                    type="button"
+                    (click)="cambiarCantidad($index, -1)"
+                    class="w-7 h-7 rounded-full bg-white lg:bg-crema text-cacao font-extrabold flex items-center justify-center cursor-pointer"
+                  >
+                    -
+                  </button>
+                  <span class="text-sm font-black text-cacao min-w-5 text-center">{{ item.cantidad }}</span>
+                  <button
+                    type="button"
+                    (click)="cambiarCantidad($index, 1)"
+                    class="w-7 h-7 rounded-full bg-white lg:bg-crema text-cacao font-extrabold flex items-center justify-center cursor-pointer"
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+            }
+          </div>
+
+          <div class="lg:col-span-5 mt-6 lg:mt-0">
+            <div class="p-5 lg:p-6 rounded-3xl bg-white lg:bg-crema border border-cacao/10 shadow-sm space-y-3">
+              <h2 class="text-base lg:text-lg font-extrabold text-cacao">Resumen del pedido</h2>
+              <div class="flex justify-between text-xs lg:text-sm text-cacao/80">
+                <span>Subtotal</span>
+                <span class="font-bold">${{ carritoService.subtotal() }} MXN</span>
+              </div>
+              <div class="flex justify-between text-xs lg:text-sm text-cacao/80">
+                <span>Envío estimado</span>
+                <span class="font-bold">${{ carritoService.envio() }} MXN</span>
+              </div>
+              <div class="pt-3 border-t border-cacao/10 flex justify-between items-center">
+                <span class="text-base font-extrabold text-cacao">Total</span>
+                <span class="text-xl lg:text-2xl font-black text-cacao">${{ carritoService.total() }} MXN</span>
+              </div>
+
+              <button
+                type="button"
+                (click)="continuarEntrega()"
+                class="w-full mt-4 py-3.5 lg:py-4 rounded-full bg-milpa text-white font-bold text-sm lg:text-base shadow-md hover:bg-milpa/90 transition cursor-pointer"
+              >
+                Continuar a entrega
+              </button>
+            </div>
+          </div>
+        </div>
+      } @else {
+        <div class="p-10 rounded-3xl bg-white text-center border border-cacao/10">
+          <p class="text-lg font-extrabold text-cacao">Tu carrito está vacío</p>
+          <a
+            routerLink="/inicio"
+            class="inline-block mt-4 px-6 py-3 rounded-full bg-milpa text-white text-sm font-bold"
+          >
+            Ir al catálogo
+          </a>
+        </div>
+      }
+    </main>
+  </div>
+
+  <app-menu-lateral [abierto]="menuAbierto" (cerrar)="menuAbierto = false" />
+  <app-barra-inferior />
+</div>

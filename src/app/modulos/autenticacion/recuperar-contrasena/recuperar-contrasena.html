@@ -1,0 +1,53 @@
+<div class="min-h-screen bg-maiz flex flex-col lg:items-center lg:justify-center lg:p-8">
+  <div class="w-full flex-1 flex flex-col lg:flex-initial lg:max-w-4xl lg:grid lg:grid-cols-12 lg:rounded-[2.5rem] lg:overflow-hidden lg:shadow-2xl lg:bg-crema">
+    <div class="bg-maiz px-6 pt-8 pb-10 lg:col-span-5 lg:p-12 lg:flex lg:flex-col lg:justify-between relative overflow-hidden">
+      <div class="relative z-10">
+        <a
+          routerLink="/iniciar-sesion"
+          class="inline-flex items-center justify-center w-10 h-10 lg:w-11 lg:h-11 rounded-full bg-white text-maiz shadow-sm hover:scale-105 transition mb-6 lg:mb-8"
+          aria-label="Regresar"
+        >
+          <svg class="w-5 h-5 lg:w-6 lg:h-6" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+          </svg>
+        </a>
+
+        <h1 class="text-3xl lg:text-4xl font-extrabold text-white tracking-tight">Olvidé mi contraseña</h1>
+        <p class="text-sm lg:text-base text-white/95 mt-2 max-w-xs leading-relaxed">
+          Ingresa tu correo para recuperar tu cuenta
+        </p>
+      </div>
+
+      <div class="hidden lg:block mt-12 relative z-10">
+        <img src="/Logotipo.png" alt="Nixta Guiso" class="w-48 h-auto object-contain drop-shadow-xs" />
+      </div>
+    </div>
+
+    <div class="flex-1 bg-crema rounded-t-[2rem] lg:rounded-none px-6 pt-9 pb-10 lg:col-span-7 lg:p-12 lg:flex lg:flex-col lg:justify-center">
+      <form (submit)="mandarCodigo($event)" class="space-y-6 max-w-md w-full mx-auto">
+        <div>
+          <label class="block text-xs lg:text-sm font-bold text-cacao mb-2 ml-1">Correo</label>
+          <input
+            type="email"
+            placeholder="ejemplo@gmail.com"
+            required
+            class="w-full px-4 py-3.5 lg:py-4 rounded-xl bg-white text-cacao text-sm lg:text-base placeholder:text-cacao/40 shadow-2xs border border-cacao/10 focus:outline-none focus:ring-2 focus:ring-maiz"
+          />
+        </div>
+
+        <button
+          type="submit"
+          class="w-full py-4 rounded-full bg-milpa text-white font-bold text-base lg:text-lg shadow-md hover:bg-milpa/90 active:scale-[0.99] transition cursor-pointer"
+        >
+          Mandar Código
+        </button>
+
+        @if (codigoEnviado) {
+          <div class="p-4 rounded-xl bg-milpa/15 border border-milpa/30 text-milpa text-xs lg:text-sm font-semibold text-center">
+            ¡Listo! Revisa tu bandeja de entrada, te enviamos un código de verificación.
+          </div>
+        }
+      </form>
+    </div>
+  </div>
+</div>

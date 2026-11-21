@@ -1,0 +1,101 @@
+<div class="min-h-screen bg-crema pb-24">
+  <app-barra-superior (abrirMenu)="menuAbierto = true" />
+
+  <section class="bg-maiz/15 px-5 py-6 lg:px-10 border-b border-cacao/10">
+    <div class="max-w-4xl mx-auto">
+      <div class="flex items-center gap-3 mb-4">
+        <a
+          routerLink="/inicio"
+          class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-white text-cacao shadow-xs border border-cacao/10 hover:scale-105 transition shrink-0"
+          aria-label="Volver al inicio"
+        >
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+          </svg>
+        </a>
+        <h1 class="text-xl lg:text-3xl font-extrabold text-cacao">Buscador</h1>
+      </div>
+
+      <div class="relative">
+        <input
+          type="text"
+          [(ngModel)]="termino"
+          placeholder="¿Qué se te antoja hoy?"
+          class="w-full pl-4 pr-20 py-3.5 lg:py-4 rounded-2xl bg-white text-cacao text-sm lg:text-base placeholder:text-cacao/45 shadow-xs border border-cacao/10 focus:outline-none focus:ring-2 focus:ring-maiz"
+        />
+        @if (termino) {
+          <button
+            type="button"
+            (click)="termino = ''"
+            class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-cacao/60 hover:text-cacao px-2 py-1 cursor-pointer"
+          >
+            Limpiar
+          </button>
+        }
+      </div>
+
+      <div class="flex flex-wrap items-center gap-2 mt-4">
+        <span class="text-xs font-bold text-cacao/80">Rápidos:</span>
+        @for (tag of sugerenciasRapidas; track tag) {
+          <button
+            type="button"
+            (click)="aplicarSugerencia(tag)"
+            class="px-3.5 py-1 rounded-full bg-white text-cacao text-xs font-bold border border-cacao/15 hover:bg-maiz/25 transition cursor-pointer"
+          >
+            {{ tag }}
+          </button>
+        }
+      </div>
+    </div>
+  </section>
+
+  <main class="max-w-4xl mx-auto px-5 lg:px-10 pt-6">
+    <p class="text-xs lg:text-sm font-bold text-cacao/70 mb-4">
+      {{ resultados.length }} resultado(s) encontrado(s)
+    </p>
+
+    @if (cargando()) {
+      <div class="space-y-3">
+        @for (n of [1, 2, 3, 4]; track n) {
+          <div class="h-20 rounded-2xl bg-white border border-cacao/10 animate-pulse"></div>
+        }
+      </div>
+    } @else {
+      <div class="space-y-3">
+        @for (res of resultados; track res.id) {
+          <a
+            [routerLink]="['/producto', res.id]"
+            class="flex items-center justify-between gap-4 p-4 rounded-2xl bg-white border border-cacao/10 shadow-2xs hover:shadow-sm transition"
+          >
+            <div class="flex items-center gap-3.5 min-w-0">
+              <div class="w-14 h-14 rounded-xl bg-maiz/15 flex items-center justify-center shrink-0 overflow-hidden">
+                <img
+                  [src]="catalogoService.resolverUrlImagen(res.imagenUrl)"
+                  [alt]="res.nombre"
+                  class="w-11 h-11 object-contain"
+                />
+              </div>
+              <div class="min-w-0">
+                <span class="text-[11px] font-bold uppercase text-milpa">{{ res.categoria }} · {{ res.unidad }}</span>
+                <h2 class="text-sm lg:text-base font-extrabold text-cacao truncate">{{ res.nombre }}</h2>
+                <p class="text-xs text-cacao/65 truncate">{{ res.descripcion }}</p>
+              </div>
+            </div>
+            <div class="text-right shrink-0">
+              <p class="text-base lg:text-lg font-black text-cacao">${{ res.precio }} MXN</p>
+              <span class="text-xs font-bold text-salsa">Ver →</span>
+            </div>
+          </a>
+        } @empty {
+          <div class="p-8 rounded-3xl bg-white text-center border border-cacao/10">
+            <p class="text-base font-bold text-cacao">No encontramos coincidencias con "{{ termino }}"</p>
+            <p class="text-xs text-cacao/65 mt-1">Prueba con otra palabra como Tortilla, Chicharrón, Frijoles o Salsa.</p>
+          </div>
+        }
+      </div>
+    }
+  </main>
+
+  <app-menu-lateral [abierto]="menuAbierto" (cerrar)="menuAbierto = false" />
+  <app-barra-inferior />
+</div>

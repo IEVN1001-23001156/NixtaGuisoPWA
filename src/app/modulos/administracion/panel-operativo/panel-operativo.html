@@ -1,0 +1,121 @@
+<div class="min-h-screen bg-crema pb-16">
+  <app-barra-superior (abrirMenu)="menuAbierto = true" />
+
+  <div class="max-w-6xl mx-auto px-5 lg:px-8 pt-6 lg:pt-10">
+    <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
+      <div>
+        <h1 class="text-2xl lg:text-3xl font-extrabold text-cacao">Panel Operativo</h1>
+        <p class="text-xs lg:text-sm text-cacao/70 mt-1">
+          Monitoreo de pedidos, ingresos, entregas programadas y operación diaria.
+        </p>
+      </div>
+
+      <button
+        type="button"
+        (click)="cargarMetricas()"
+        class="px-5 py-2.5 rounded-full bg-milpa text-white text-xs lg:text-sm font-bold shadow hover:bg-milpa/90 transition cursor-pointer"
+      >
+        Actualizar datos
+      </button>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div class="p-5 rounded-3xl bg-white border border-cacao/10 shadow-xs">
+        <p class="text-xs font-bold text-cacao/65">Pedidos registrados</p>
+        <p class="text-2xl lg:text-3xl font-black text-cacao mt-1">{{ totalPedidos() }}</p>
+      </div>
+
+      <div class="p-5 rounded-3xl bg-white border border-cacao/10 shadow-xs">
+        <p class="text-xs font-bold text-cacao/65">Pendientes de atención</p>
+        <p class="text-2xl lg:text-3xl font-black text-salsa mt-1">{{ pedidosPendientes() }}</p>
+      </div>
+
+      <div class="p-5 rounded-3xl bg-white border border-cacao/10 shadow-xs">
+        <p class="text-xs font-bold text-cacao/65">Ingresos acumulados</p>
+        <p class="text-2xl lg:text-3xl font-black text-milpa mt-1">${{ ingresosTotales() }} MXN</p>
+      </div>
+
+      <div class="p-5 rounded-3xl bg-white border border-cacao/10 shadow-xs">
+        <p class="text-xs font-bold text-cacao/65">Pedidos programados</p>
+        <p class="text-2xl lg:text-3xl font-black text-cacao mt-1">{{ programacionesActivas() }}</p>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3.5 mb-8">
+      <a
+        routerLink="/admin/menu"
+        class="p-4 rounded-2xl bg-white border border-cacao/10 hover:border-maiz transition flex items-center justify-between"
+      >
+        <span class="text-xs lg:text-sm font-extrabold text-cacao">Menú y precios</span>
+        <span class="text-salsa font-extrabold">→</span>
+      </a>
+
+      <a
+        routerLink="/admin/inventario"
+        class="p-4 rounded-2xl bg-white border border-cacao/10 hover:border-maiz transition flex items-center justify-between"
+      >
+        <span class="text-xs lg:text-sm font-extrabold text-cacao">Inventario</span>
+        <span class="text-salsa font-extrabold">→</span>
+      </a>
+
+      <a
+        routerLink="/admin/logistica"
+        class="p-4 rounded-2xl bg-white border border-cacao/10 hover:border-maiz transition flex items-center justify-between"
+      >
+        <span class="text-xs lg:text-sm font-extrabold text-cacao">Logística</span>
+        <span class="text-salsa font-extrabold">→</span>
+      </a>
+
+      <a
+        routerLink="/admin/crm"
+        class="p-4 rounded-2xl bg-white border border-cacao/10 hover:border-maiz transition flex items-center justify-between"
+      >
+        <span class="text-xs lg:text-sm font-extrabold text-cacao">Clientes CRM</span>
+        <span class="text-salsa font-extrabold">→</span>
+      </a>
+    </div>
+
+    <section class="bg-white rounded-[2rem] p-6 lg:p-8 shadow-xl border border-cacao/10">
+      <h2 class="text-lg lg:text-xl font-extrabold text-cacao mb-4">Actividad reciente de pedidos</h2>
+
+      @if (cargando()) {
+        <div class="space-y-3">
+          @for (n of [1, 2, 3]; track n) {
+            <div class="h-16 rounded-2xl bg-crema animate-pulse"></div>
+          }
+        </div>
+      } @else {
+        <div class="space-y-3">
+          @for (p of pedidos(); track p.id_pedido) {
+            <div class="p-4 rounded-2xl bg-crema border border-cacao/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <div class="flex items-center gap-2 flex-wrap">
+                  <span class="px-2.5 py-0.5 rounded-full bg-maiz text-cacao text-xs font-extrabold">
+                    {{ p.folio }}
+                  </span>
+                  <span class="text-xs font-bold text-cacao/70">{{ p.fecha_pedido }}</span>
+                  <span class="px-2.5 py-0.5 rounded-full bg-milpa/15 text-milpa text-xs font-bold">
+                    {{ p.estado }}
+                  </span>
+                </div>
+                <p class="text-xs lg:text-sm text-cacao/80 mt-1">
+                  {{ p.direccion_entrega || 'Entrega a domicilio' }} · Pago: {{ p.metodo_pago }}
+                </p>
+              </div>
+
+              <div class="sm:text-right">
+                <p class="text-base lg:text-lg font-black text-cacao">${{ p.total }} MXN</p>
+              </div>
+            </div>
+          } @empty {
+            <div class="p-6 rounded-2xl bg-crema border border-cacao/10 text-center">
+              <p class="text-sm font-bold text-cacao/75">No hay pedidos registrados para mostrar.</p>
+            </div>
+          }
+        </div>
+      }
+    </section>
+  </div>
+
+  <app-menu-lateral [abierto]="menuAbierto" (cerrar)="menuAbierto = false" />
+</div>

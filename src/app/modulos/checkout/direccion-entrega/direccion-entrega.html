@@ -1,0 +1,94 @@
+<div class="min-h-screen bg-crema pb-24">
+  <app-barra-superior (abrirMenu)="menuAbierto = true" />
+
+  <div class="max-w-4xl mx-auto px-5 lg:px-6 pt-6 lg:pt-10">
+    <div class="rounded-[2rem] overflow-hidden shadow-xl border border-cacao/10 bg-crema lg:grid lg:grid-cols-12">
+      <div class="bg-maiz px-6 pt-7 pb-8 lg:col-span-5 lg:p-10 lg:flex lg:flex-col lg:justify-between">
+        <div>
+          <a
+            routerLink="/carrito"
+            class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-white text-maiz shadow-sm hover:scale-105 transition mb-5"
+            aria-label="Volver al carrito"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+            </svg>
+          </a>
+
+          <h1 class="text-2xl lg:text-3xl font-extrabold text-white tracking-tight">Dirección de Entrega</h1>
+          <p class="text-xs lg:text-sm text-white/90 mt-2">
+            Indica dónde recibirás tus tortillas y guisados.
+          </p>
+        </div>
+
+        <div class="hidden lg:block mt-8">
+          <img src="/Isotipo.png" alt="NixtaGuiso" class="w-36 h-36 object-contain opacity-85" />
+        </div>
+      </div>
+
+      <div class="px-6 pt-7 pb-9 lg:col-span-7 lg:p-10 lg:flex lg:flex-col lg:justify-center">
+        <form (submit)="continuarPago($event)" class="space-y-4 max-w-lg w-full mx-auto">
+          <div>
+            <label class="block text-xs lg:text-sm font-bold text-cacao mb-1.5 ml-1">Calle y número</label>
+            <input
+              type="text"
+              [(ngModel)]="calle"
+              name="calle"
+              placeholder="Blvd. Adolfo López Mateos #120"
+              required
+              class="w-full px-4 py-3.5 rounded-xl bg-white text-cacao text-sm lg:text-base border border-cacao/10 focus:outline-none focus:ring-2 focus:ring-maiz"
+            />
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs lg:text-sm font-bold text-cacao mb-1.5 ml-1">Colonia</label>
+              <input
+                type="text"
+                [(ngModel)]="colonia"
+                name="colonia"
+                placeholder="Centro"
+                required
+                class="w-full px-4 py-3.5 rounded-xl bg-white text-cacao text-sm lg:text-base border border-cacao/10 focus:outline-none focus:ring-2 focus:ring-maiz"
+              />
+            </div>
+
+            <div>
+              <label class="block text-xs lg:text-sm font-bold text-cacao mb-1.5 ml-1">Ciudad</label>
+              <input
+                type="text"
+                [(ngModel)]="ciudad"
+                name="ciudad"
+                required
+                class="w-full px-4 py-3.5 rounded-xl bg-white text-cacao text-sm lg:text-base border border-cacao/10 focus:outline-none focus:ring-2 focus:ring-maiz"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs lg:text-sm font-bold text-cacao mb-1.5 ml-1">Referencias</label>
+            <input
+              type="text"
+              [(ngModel)]="referencias"
+              name="referencias"
+              placeholder="Fachada color crema, portón negro"
+              class="w-full px-4 py-3.5 rounded-xl bg-white text-cacao text-sm lg:text-base border border-cacao/10 focus:outline-none focus:ring-2 focus:ring-maiz"
+            />
+          </div>
+
+          <div class="pt-3">
+            <button
+              type="submit"
+              class="w-full py-4 rounded-full bg-milpa text-white font-bold text-base lg:text-lg shadow-md hover:bg-milpa/90 transition cursor-pointer"
+            >
+              Elegir método de pago
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <app-menu-lateral [abierto]="menuAbierto" (cerrar)="menuAbierto = false" />
+  <app-barra-inferior />
+</div>

@@ -1,0 +1,172 @@
+<div class="min-h-screen bg-crema pb-24">
+  <header class="bg-maiz px-4 sm:px-6 pt-6 pb-8 lg:px-10 lg:py-8 rounded-b-[2rem] lg:rounded-none shadow-sm">
+    <div class="max-w-6xl mx-auto">
+      <div class="flex items-center justify-between gap-4 sm:gap-6 mb-5">
+        <div class="flex items-center gap-4 sm:gap-6 min-w-0">
+          <button
+            type="button"
+            (click)="menuAbierto = true"
+            class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-white text-maiz shadow-sm hover:scale-105 transition cursor-pointer shrink-0"
+            aria-label="Abrir menú"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+
+          <img
+            src="/Logotipo.png"
+            alt="NixtaGuiso"
+            class="h-16 sm:h-20 lg:h-24 w-auto object-contain select-none shrink-0"
+          />
+
+          <div class="hidden sm:block h-10 w-px bg-cacao/15 shrink-0"></div>
+
+          <h1 class="text-lg sm:text-xl lg:text-2xl font-extrabold text-cacao tracking-tight truncate">
+            {{ tituloBuenProvecho }}
+          </h1>
+        </div>
+
+        <button
+          type="button"
+          (click)="irAEditarDireccion()"
+          class="hidden md:flex flex-col items-center justify-center px-4 py-2 rounded-2xl bg-crema/95 hover:bg-crema text-cacao border border-cacao/15 shadow-2xs transition cursor-pointer max-w-xs text-center"
+        >
+          <span class="inline-flex items-center gap-1 text-[11px] font-bold text-cacao/75">
+            Enviar a
+            <svg class="w-3.5 h-3.5 text-cacao" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+            </svg>
+          </span>
+          <span class="text-xs lg:text-sm font-extrabold text-cacao truncate max-w-full">
+            {{ direccionEnvio }}
+          </span>
+        </button>
+
+        <div class="flex items-center gap-2.5 sm:gap-3 shrink-0">
+          <a
+            routerLink="/programados"
+            class="hidden sm:inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-cacao text-crema text-xs lg:text-sm font-bold shadow hover:bg-cacao/85 transition"
+          >
+            Pedidos Programados
+          </a>
+
+          <a
+            routerLink="/perfil"
+            aria-label="Perfil de usuario"
+            class="w-11 h-11 lg:w-12 lg:h-12 rounded-full bg-crema text-cacao border-2 border-white shadow-sm flex items-center justify-center font-extrabold text-sm lg:text-base hover:scale-105 transition shrink-0 overflow-hidden"
+          >
+            @if (fotoPerfilService.fotoUrl()) {
+              <img
+                [src]="fotoPerfilService.fotoUrl()!"
+                alt="Foto de perfil"
+                class="w-full h-full object-cover"
+              />
+            } @else {
+              <span>{{ inicialesUsuario }}</span>
+            }
+          </a>
+        </div>
+      </div>
+
+      <button
+        type="button"
+        (click)="irAEditarDireccion()"
+        class="md:hidden w-full flex items-center justify-between px-4 py-2.5 mb-3.5 rounded-2xl bg-crema/95 text-cacao border border-cacao/15 text-left cursor-pointer"
+      >
+        <div class="min-w-0">
+          <span class="block text-[11px] font-bold text-cacao/70">Enviar a</span>
+          <span class="block text-xs font-extrabold text-cacao truncate">{{ direccionEnvio }}</span>
+        </div>
+        <svg class="w-4 h-4 text-cacao shrink-0 ml-2" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+
+      <button
+        type="button"
+        (click)="irAlBuscador()"
+        class="w-full flex items-center justify-between px-4 py-3.5 lg:py-4 rounded-2xl bg-white text-cacao/60 text-sm lg:text-base shadow-xs border border-cacao/10 hover:bg-white/95 transition cursor-pointer text-left"
+      >
+        <span class="flex items-center gap-3">
+          <svg class="w-5 h-5 text-maiz shrink-0" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35m1.85-5.15a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          <span>Buscar tortillas, guisados o paquetes...</span>
+        </span>
+        <span class="text-xs font-bold px-2.5 py-1 rounded-full bg-crema text-cacao">Explorar</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="max-w-6xl mx-auto px-5 lg:px-10 pt-6">
+    <div class="flex items-center gap-2.5 overflow-x-auto pb-2 mb-6">
+      @for (cat of categorias; track cat) {
+        <button
+          type="button"
+          (click)="seleccionarCategoria(cat)"
+          class="px-5 py-2.5 rounded-full text-xs lg:text-sm font-bold whitespace-nowrap transition cursor-pointer"
+          [class.bg-milpa]="categoriaActiva === cat"
+          [class.text-white]="categoriaActiva === cat"
+          [class.shadow-sm]="categoriaActiva === cat"
+          [class.bg-white]="categoriaActiva !== cat"
+          [class.text-cacao]="categoriaActiva !== cat"
+          [class.border]="categoriaActiva !== cat"
+          [class.border-cacao/15]="categoriaActiva !== cat"
+        >
+          {{ cat }}
+        </button>
+      }
+    </div>
+
+    @if (cargando()) {
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        @for (n of [1, 2, 3, 4]; track n) {
+          <div class="bg-white rounded-3xl p-4 h-72 border border-cacao/10 animate-pulse"></div>
+        }
+      </div>
+    } @else {
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        @for (item of productosFiltrados; track item.id) {
+          <a
+            [routerLink]="['/producto', item.id]"
+            class="group bg-white rounded-3xl p-4 shadow-sm border border-cacao/10 hover:shadow-md hover:-translate-y-0.5 transition-all flex flex-col justify-between"
+          >
+            <div>
+              <div class="relative h-40 lg:h-44 rounded-2xl bg-gradient-to-br from-maiz/25 to-maiz/10 mb-4 overflow-hidden">
+                <span class="absolute top-3 left-3 z-10 px-3 py-1 rounded-full bg-maiz text-cacao text-[11px] font-extrabold shadow-2xs">
+                  {{ item.etiqueta }}
+                </span>
+                <img
+                  [src]="catalogoService.resolverUrlImagen(item.imagenUrl)"
+                  [alt]="item.nombre"
+                  class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                />
+              </div>
+
+              <span class="text-[11px] font-bold uppercase tracking-wider text-milpa">
+                {{ item.categoria }} · {{ item.unidad }}
+              </span>
+              <h2 class="text-base lg:text-lg font-extrabold text-cacao mt-0.5 leading-snug">
+                {{ item.nombre }}
+              </h2>
+              <p class="text-xs lg:text-sm text-cacao/70 mt-1.5 line-clamp-2">
+                {{ item.descripcion }}
+              </p>
+            </div>
+
+            <div class="flex items-center justify-between pt-4 mt-4 border-t border-cacao/10">
+              <span class="text-lg lg:text-xl font-black text-cacao">${{ item.precio }} MXN</span>
+              <span class="px-3.5 py-1.5 rounded-full bg-cacao text-crema text-xs font-bold group-hover:bg-salsa transition-colors">
+                Ver detalle
+              </span>
+            </div>
+          </a>
+        }
+      </div>
+    }
+  </main>
+
+  <app-menu-lateral [abierto]="menuAbierto" (cerrar)="menuAbierto = false" />
+  <app-barra-inferior />
+</div>

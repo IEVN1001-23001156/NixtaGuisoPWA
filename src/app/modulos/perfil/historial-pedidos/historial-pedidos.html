@@ -1,0 +1,62 @@
+<div class="min-h-screen bg-crema pb-24">
+  <app-barra-superior (abrirMenu)="menuAbierto = true" />
+
+  <div class="max-w-4xl mx-auto px-5 lg:px-6 pt-6 lg:pt-10">
+    <div class="flex items-center gap-3 mb-6">
+      <a
+        routerLink="/perfil"
+        class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-white text-cacao shadow-xs border border-cacao/10 hover:scale-105 transition shrink-0"
+        aria-label="Volver al perfil"
+      >
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+        </svg>
+      </a>
+      <h1 class="text-xl lg:text-3xl font-extrabold text-cacao">Historial de Pedidos</h1>
+    </div>
+
+    <main class="lg:bg-white lg:rounded-[2rem] lg:p-8 lg:shadow-xl lg:border lg:border-cacao/10 space-y-4">
+      @if (cargando()) {
+        <div class="space-y-3">
+          @for (n of [1, 2]; track n) {
+            <div class="h-24 rounded-2xl bg-white lg:bg-crema border border-cacao/10 animate-pulse"></div>
+          }
+        </div>
+      } @else {
+        @for (pedido of pedidos(); track pedido.id_pedido) {
+          <div class="p-5 rounded-2xl bg-white lg:bg-crema border border-cacao/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-black text-cacao">{{ pedido.folio }}</span>
+                @if (pedido.fecha_pedido) {
+                  <span class="text-xs text-cacao/60">· {{ pedido.fecha_pedido }}</span>
+                }
+              </div>
+              <p class="text-sm lg:text-base font-bold text-cacao mt-1">{{ pedido.resumen }}</p>
+              <span class="inline-block mt-2 px-3 py-0.5 rounded-full bg-milpa/15 text-milpa text-xs font-bold">
+                {{ etiquetaEstado(pedido.estado) }}
+              </span>
+            </div>
+
+            <div class="sm:text-right">
+              <p class="text-lg font-black text-cacao">${{ pedido.total }} MXN</p>
+            </div>
+          </div>
+        } @empty {
+          <div class="p-8 rounded-2xl bg-white lg:bg-crema border border-cacao/10 text-center">
+            <p class="text-base font-extrabold text-cacao">Aún no tienes pedidos registrados</p>
+            <a
+              routerLink="/inicio"
+              class="inline-block mt-4 px-5 py-2.5 rounded-full bg-milpa text-white text-xs lg:text-sm font-bold"
+            >
+              Explorar catálogo
+            </a>
+          </div>
+        }
+      }
+    </main>
+  </div>
+
+  <app-menu-lateral [abierto]="menuAbierto" (cerrar)="menuAbierto = false" />
+  <app-barra-inferior />
+</div>

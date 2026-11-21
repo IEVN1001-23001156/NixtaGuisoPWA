@@ -1,0 +1,17 @@
+# Python / Flask
+flask/venv/
+__pycache__/
+*.pyc
+flask/.env
+flask/uploads/
+
+# Angular / Node
+angular/**/node_modules/
+angular/**/dist/
+angular/**/.angular/
+
+# Sistema y editor
+.DS_Store
+Thumbs.db
+.vscode/
+flask/config.py

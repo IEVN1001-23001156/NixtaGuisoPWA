@@ -1,0 +1,100 @@
+<div class="min-h-screen bg-crema pb-24">
+  <app-barra-superior (abrirMenu)="menuAbierto = true" />
+
+  <div class="max-w-5xl mx-auto px-5 lg:px-6 pt-6 lg:pt-10">
+    @if (cargando()) {
+      <div class="bg-white rounded-[2.5rem] h-96 border border-cacao/10 animate-pulse"></div>
+    } @else {
+      <div class="lg:grid lg:grid-cols-12 lg:gap-8 lg:bg-white lg:rounded-[2.5rem] lg:p-8 lg:shadow-xl lg:border lg:border-cacao/10">
+        <div class="relative bg-maiz lg:col-span-6 rounded-3xl overflow-hidden flex flex-col justify-between min-h-[340px] lg:min-h-[440px]">
+          <img
+            [src]="catalogoService.resolverUrlImagen(producto().imagenUrl)"
+            [alt]="producto().nombre"
+            class="absolute inset-0 w-full h-full object-cover"
+          />
+
+          <div class="relative z-10 p-5 lg:p-6 flex items-center justify-between gap-2">
+            <a
+              routerLink="/inicio"
+              class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-white text-maiz shadow-sm hover:scale-105 transition shrink-0"
+              aria-label="Regresar"
+            >
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+              </svg>
+            </a>
+
+            <span class="px-3.5 py-1 rounded-full bg-cacao text-crema text-xs font-bold shadow-xs">
+              {{ producto().categoria }}
+            </span>
+          </div>
+
+          <div class="relative z-10 px-5 py-3 bg-gradient-to-t from-cacao/80 via-cacao/45 to-transparent">
+            <p class="text-center text-xs lg:text-sm font-bold text-crema">
+              Presentación: {{ producto().unidad }}
+            </p>
+          </div>
+        </div>
+
+        <div class="px-1 pt-6 lg:col-span-6 lg:px-2 lg:pt-2 flex flex-col justify-between">
+          <div>
+            <h1 class="text-2xl lg:text-4xl font-extrabold text-cacao tracking-tight">
+              {{ producto().nombre }}
+            </h1>
+            <p class="text-2xl lg:text-3xl font-black text-salsa mt-2">
+              ${{ producto().precio * cantidad }} MXN
+            </p>
+
+            <p class="text-sm lg:text-base text-cacao/80 mt-4 leading-relaxed">
+              {{ producto().descripcion }}
+            </p>
+
+            <div class="mt-6">
+              <label class="block text-xs lg:text-sm font-bold text-cacao mb-2">Cantidad</label>
+              <div class="inline-flex items-center gap-4 bg-white lg:bg-crema px-4 py-2 rounded-full border border-cacao/15">
+                <button
+                  type="button"
+                  (click)="cambiarCantidad(-1)"
+                  class="w-8 h-8 rounded-full bg-crema lg:bg-white text-cacao font-extrabold text-lg flex items-center justify-center hover:bg-maiz/30 transition cursor-pointer"
+                >
+                  -
+                </button>
+                <span class="text-base lg:text-lg font-black text-cacao min-w-6 text-center">{{ cantidad }}</span>
+                <button
+                  type="button"
+                  (click)="cambiarCantidad(1)"
+                  class="w-8 h-8 rounded-full bg-crema lg:bg-white text-cacao font-extrabold text-lg flex items-center justify-center hover:bg-maiz/30 transition cursor-pointer"
+                >
+                  +
+                </button>
+              </div>
+            </div>
+
+            <div class="mt-5">
+              <label class="block text-xs lg:text-sm font-bold text-cacao mb-2">Indicaciones especiales (opcional)</label>
+              <input
+                type="text"
+                [(ngModel)]="notaEspecial"
+                placeholder="Ej. Tortillas bien calientes, salsa aparte..."
+                class="w-full px-4 py-3 rounded-xl bg-white lg:bg-crema text-cacao text-sm border border-cacao/15 focus:outline-none focus:ring-2 focus:ring-maiz"
+              />
+            </div>
+          </div>
+
+          <div class="pt-7">
+            <button
+              type="button"
+              (click)="agregarAlCarrito()"
+              class="w-full py-4 rounded-full bg-milpa text-white font-bold text-base lg:text-lg shadow-md hover:bg-milpa/90 active:scale-[0.99] transition cursor-pointer"
+            >
+              Agregar al carrito · ${{ producto().precio * cantidad }} MXN
+            </button>
+          </div>
+        </div>
+      </div>
+    }
+  </div>
+
+  <app-menu-lateral [abierto]="menuAbierto" (cerrar)="menuAbierto = false" />
+  <app-barra-inferior />
+</div>

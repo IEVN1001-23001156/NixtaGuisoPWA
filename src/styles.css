@@ -1,1 +1,19 @@
-/* You can add global styles to this file, and also import other style files */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
+@import "tailwindcss";
+@import "leaflet/dist/leaflet.css";
+
+@theme {
+  --color-crema: #F6F4DD;
+  --color-maiz: #F2A922;
+  --color-cacao: #4E342E;
+  --color-milpa: #3B6E3C;
+  --color-salsa: #C63D2F;
+  --font-sans: "Poppins", sans-serif;
+}
+
+body {
+  background-color: var(--color-crema);
+  color: var(--color-cacao);
+  font-family: var(--font-sans);
+  margin: 0;
+}

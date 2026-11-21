@@ -1,0 +1,163 @@
+<div class="min-h-screen bg-crema pb-24">
+  <app-barra-superior (abrirMenu)="menuAbierto = true" />
+
+  <div class="max-w-4xl mx-auto px-5 lg:px-6 pt-6 lg:pt-10">
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
+      <h1 class="text-xl lg:text-3xl font-extrabold text-cacao">Calendario de Agendamiento</h1>
+      <div class="flex items-center gap-2">
+        <a
+          routerLink="/cotizaciones-b2b"
+          class="px-3.5 py-1.5 rounded-full bg-white text-cacao text-xs font-bold border border-cacao/15 hover:bg-maiz/20 transition"
+        >
+          Cotizaciones B2B
+        </a>
+        <a
+          routerLink="/formulario-especial"
+          class="px-3.5 py-1.5 rounded-full bg-white text-cacao text-xs font-bold border border-cacao/15 hover:bg-maiz/20 transition"
+        >
+          Pedido especial
+        </a>
+      </div>
+    </div>
+
+    <main class="lg:bg-white lg:rounded-[2rem] lg:p-8 lg:shadow-xl lg:border lg:border-cacao/10 space-y-6">
+      <form (submit)="guardarProgramacion($event)" class="p-5 rounded-3xl bg-white lg:bg-crema border border-cacao/10 space-y-4">
+        <h2 class="text-base lg:text-lg font-extrabold text-cacao">Agendar entrega</h2>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+          <div class="sm:col-span-2">
+            <label class="block text-xs font-bold text-cacao mb-1 ml-1">Producto</label>
+            <select
+              [(ngModel)]="idProductoSeleccionado"
+              name="idProductoSeleccionado"
+              class="w-full px-4 py-3 rounded-xl bg-crema lg:bg-white text-cacao text-sm border border-cacao/15 focus:outline-none focus:ring-2 focus:ring-maiz"
+            >
+              @for (p of productosDisponibles(); track p.id) {
+                <option [value]="p.id">{{ p.nombre }} — ${{ p.precio }} MXN ({{ p.unidad }})</option>
+              }
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-cacao mb-1 ml-1">Cantidad</label>
+            <input
+              type="number"
+              min="1"
+              step="1"
+              [(ngModel)]="cantidad"
+              name="cantidad"
+              required
+              class="w-full px-4 py-3 rounded-xl bg-crema lg:bg-white text-cacao text-sm border border-cacao/15 focus:outline-none focus:ring-2 focus:ring-maiz"
+            />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+          <div>
+            <label class="block text-xs font-bold text-cacao mb-1 ml-1">Frecuencia</label>
+            <select
+              [(ngModel)]="frecuencia"
+              name="frecuencia"
+              class="w-full px-4 py-3 rounded-xl bg-crema lg:bg-white text-cacao text-sm border border-cacao/15 focus:outline-none focus:ring-2 focus:ring-maiz"
+            >
+              <option value="unica">Una vez</option>
+              <option value="semanal">Semanal</option>
+              <option value="quincenal">Quincenal</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-cacao mb-1 ml-1">Fecha</label>
+            <input
+              type="date"
+              [(ngModel)]="fechaProgramada"
+              name="fechaProgramada"
+              required
+              class="w-full px-4 py-3 rounded-xl bg-crema lg:bg-white text-cacao text-sm border border-cacao/15 focus:outline-none focus:ring-2 focus:ring-maiz"
+            />
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-cacao mb-1 ml-1">Hora de entrega</label>
+            <input
+              type="time"
+              [(ngModel)]="horaEntrega"
+              name="horaEntrega"
+              required
+              class="w-full px-4 py-3 rounded-xl bg-crema lg:bg-white text-cacao text-sm border border-cacao/15 focus:outline-none focus:ring-2 focus:ring-maiz"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-cacao mb-1 ml-1">Dirección de entrega</label>
+          <input
+            type="text"
+            [(ngModel)]="direccionEntrega"
+            name="direccionEntrega"
+            placeholder="Calle, número y colonia"
+            required
+            class="w-full px-4 py-3 rounded-xl bg-crema lg:bg-white text-cacao text-sm border border-cacao/15 focus:outline-none focus:ring-2 focus:ring-maiz"
+          />
+        </div>
+
+        @if (errorMensaje()) {
+          <p class="text-xs font-bold text-salsa px-1">{{ errorMensaje() }}</p>
+        }
+
+        @if (mensajeEstado()) {
+          <p class="text-xs font-bold text-milpa px-1">{{ mensajeEstado() }}</p>
+        }
+
+        <button
+          type="submit"
+          [disabled]="guardando()"
+          class="w-full sm:w-auto px-7 py-3.5 rounded-full bg-milpa text-white text-sm font-bold shadow hover:bg-milpa/90 disabled:opacity-60 transition cursor-pointer"
+        >
+          {{ guardando() ? 'Guardando...' : 'Agendar en calendario' }}
+        </button>
+      </form>
+
+      <div class="space-y-3">
+        <h2 class="text-base lg:text-lg font-extrabold text-cacao">Entregas agendadas</h2>
+
+        @if (cargando()) {
+          <div class="h-24 rounded-2xl bg-white lg:bg-crema border border-cacao/10 animate-pulse"></div>
+        } @else {
+          @for (prog of programaciones(); track prog.id_programacion) {
+            <div class="p-5 rounded-2xl bg-white lg:bg-crema border border-cacao/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <div class="flex items-center gap-2 flex-wrap">
+                  <span class="px-2.5 py-0.5 rounded-full bg-maiz text-cacao text-xs font-extrabold">
+                    {{ etiquetaFrecuencia(prog.frecuencia) }}
+                  </span>
+                  <span class="text-xs text-cacao/70 font-bold">
+                    {{ prog.fecha_programada }} · {{ prog.hora_entrega }}
+                  </span>
+                </div>
+                <p class="text-sm lg:text-base font-bold text-cacao mt-1.5">{{ prog.resumen }}</p>
+                @if (prog.direccion_entrega) {
+                  <p class="text-xs text-cacao/65 mt-0.5">{{ prog.direccion_entrega }}</p>
+                }
+                <span class="inline-block mt-2 px-3 py-0.5 rounded-full bg-milpa/15 text-milpa text-xs font-bold">
+                  {{ prog.estado }}
+                </span>
+              </div>
+
+              <div class="sm:text-right">
+                <p class="text-lg font-black text-cacao">${{ prog.total_estimado }} MXN</p>
+              </div>
+            </div>
+          } @empty {
+            <div class="p-6 rounded-2xl bg-white lg:bg-crema border border-cacao/10 text-center">
+              <p class="text-sm font-bold text-cacao/75">Aún no tienes entregas agendadas.</p>
+            </div>
+          }
+        }
+      </div>
+    </main>
+  </div>
+
+  <app-menu-lateral [abierto]="menuAbierto" (cerrar)="menuAbierto = false" />
+  <app-barra-inferior />
+</div>

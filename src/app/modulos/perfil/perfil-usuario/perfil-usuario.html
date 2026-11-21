@@ -1,0 +1,150 @@
+<div class="min-h-screen bg-crema" [class.pb-24]="!esAdmin()" [class.pb-8]="esAdmin()">
+  <app-barra-superior (abrirMenu)="menuAbierto = true" />
+
+  <div class="max-w-4xl mx-auto px-5 lg:px-6 pt-6 lg:pt-10">
+    <div class="flex items-center justify-between gap-3 mb-6">
+      <h1 class="text-xl lg:text-3xl font-extrabold text-cacao">Mi Perfil</h1>
+      <span class="px-3.5 py-1 rounded-full bg-cacao text-crema text-xs font-bold">
+        {{ tipoPerfil }}
+      </span>
+    </div>
+
+    <main class="lg:bg-white lg:rounded-[2rem] lg:p-8 lg:shadow-xl lg:border lg:border-cacao/10 space-y-6">
+      <div class="p-5 rounded-3xl bg-white lg:bg-crema border border-cacao/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div class="flex items-center gap-4 min-w-0">
+          @if (fotoPreview()) {
+            <img
+              [src]="fotoPreview()!"
+              [alt]="nombreUsuario"
+              class="w-16 h-16 rounded-full object-cover border-2 border-maiz shrink-0"
+            />
+          } @else {
+            <div class="w-16 h-16 rounded-full bg-maiz text-cacao font-black text-xl flex items-center justify-center shrink-0">
+              {{ iniciales }}
+            </div>
+          }
+
+          <div class="min-w-0">
+            <h2 class="text-lg lg:text-xl font-extrabold text-cacao truncate">{{ nombreUsuario }}</h2>
+            <p class="text-xs lg:text-sm text-cacao/70 truncate">{{ correoUsuario }}</p>
+            <p class="text-xs text-cacao/65 mt-0.5">Tel: {{ telefonoUsuario }}</p>
+            @if (nombreNegocio) {
+              <p class="text-xs font-bold text-milpa mt-0.5">Negocio: {{ nombreNegocio }}</p>
+            }
+          </div>
+        </div>
+
+        <label class="px-4 py-2 rounded-full bg-crema lg:bg-white text-cacao text-xs font-bold border border-cacao/15 hover:bg-maiz/25 transition cursor-pointer text-center shrink-0">
+          Cambiar foto
+          <input
+            type="file"
+            accept="image/*"
+            (change)="onSeleccionarFoto($event)"
+            class="hidden"
+          />
+        </label>
+      </div>
+
+      @if (mensajeEstado()) {
+        <p class="text-xs font-bold text-milpa px-1">{{ mensajeEstado() }}</p>
+      }
+
+      @if (esAdmin()) {
+        <div class="p-5 rounded-3xl bg-white lg:bg-crema border border-cacao/10 space-y-4">
+          <div>
+            <h3 class="text-base font-extrabold text-cacao">Accesos administrativos</h3>
+            <p class="text-xs text-cacao/70 mt-0.5">
+              Gestión operativa, catálogo, inventario, logística y relación con clientes.
+            </p>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+            <a
+              routerLink="/admin/panel"
+              class="p-4 rounded-2xl bg-crema lg:bg-white border border-cacao/10 hover:border-maiz transition flex items-center justify-between"
+            >
+              <span class="text-sm font-extrabold text-cacao">Panel operativo</span>
+              <span class="text-salsa font-extrabold">→</span>
+            </a>
+
+            <a
+              routerLink="/admin/menu"
+              class="p-4 rounded-2xl bg-crema lg:bg-white border border-cacao/10 hover:border-maiz transition flex items-center justify-between"
+            >
+              <span class="text-sm font-extrabold text-cacao">Gestión de menú</span>
+              <span class="text-salsa font-extrabold">→</span>
+            </a>
+
+            <a
+              routerLink="/admin/inventario"
+              class="p-4 rounded-2xl bg-crema lg:bg-white border border-cacao/10 hover:border-maiz transition flex items-center justify-between"
+            >
+              <span class="text-sm font-extrabold text-cacao">Inventario e insumos</span>
+              <span class="text-salsa font-extrabold">→</span>
+            </a>
+
+            <a
+              routerLink="/admin/logistica"
+              class="p-4 rounded-2xl bg-crema lg:bg-white border border-cacao/10 hover:border-maiz transition flex items-center justify-between"
+            >
+              <span class="text-sm font-extrabold text-cacao">Logística y entregas</span>
+              <span class="text-salsa font-extrabold">→</span>
+            </a>
+          </div>
+        </div>
+      } @else {
+        <form (submit)="guardarDireccion($event)" class="p-5 rounded-3xl bg-white lg:bg-crema border border-cacao/10 space-y-3">
+          <label class="block text-xs lg:text-sm font-extrabold text-cacao">
+            Dirección de entrega
+          </label>
+          <div class="flex flex-col sm:flex-row gap-3">
+            <input
+              type="text"
+              [(ngModel)]="direccionEdit"
+              name="direccionEdit"
+              placeholder="Calle, número, colonia o referencia"
+              required
+              class="flex-1 px-4 py-3 rounded-xl bg-crema lg:bg-white text-cacao text-sm border border-cacao/15 focus:outline-none focus:ring-2 focus:ring-maiz"
+            />
+            <button
+              type="submit"
+              [disabled]="guardando()"
+              class="px-6 py-3 rounded-full bg-milpa text-white text-xs lg:text-sm font-bold shadow hover:bg-milpa/90 disabled:opacity-60 transition cursor-pointer shrink-0"
+            >
+              {{ guardando() ? 'Guardando...' : 'Guardar dirección' }}
+            </button>
+          </div>
+        </form>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <a
+            routerLink="/historial-pedidos"
+            class="p-5 rounded-2xl bg-white lg:bg-crema border border-cacao/10 hover:border-maiz transition flex items-center justify-between"
+          >
+            <div>
+              <p class="text-sm lg:text-base font-extrabold text-cacao">Historial de pedidos</p>
+              <p class="text-xs text-cacao/65">Consulta tus órdenes y su estado</p>
+            </div>
+            <span class="text-salsa font-extrabold">→</span>
+          </a>
+
+          <a
+            routerLink="/programados"
+            class="p-5 rounded-2xl bg-white lg:bg-crema border border-cacao/10 hover:border-maiz transition flex items-center justify-between"
+          >
+            <div>
+              <p class="text-sm lg:text-base font-extrabold text-cacao">Pedidos programados</p>
+              <p class="text-xs text-cacao/65">Agenda anticipada y eventos</p>
+            </div>
+            <span class="text-salsa font-extrabold">→</span>
+          </a>
+        </div>
+      }
+    </main>
+  </div>
+
+  <app-menu-lateral [abierto]="menuAbierto" (cerrar)="menuAbierto = false" />
+  @if (!esAdmin()) {
+    <app-barra-inferior />
+  }
+</div>

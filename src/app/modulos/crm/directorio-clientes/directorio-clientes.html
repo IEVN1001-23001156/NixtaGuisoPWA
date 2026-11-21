@@ -1,0 +1,117 @@
+<div class="min-h-screen bg-crema pb-24">
+  <app-barra-superior (abrirMenu)="menuAbierto = true" />
+
+  <div class="max-w-4xl mx-auto px-5 lg:px-6 pt-6 lg:pt-8">
+    <header class="bg-maiz px-5 pt-6 pb-7 rounded-t-[2rem] shadow-sm">
+      <div class="flex items-center justify-between gap-3 mb-4">
+        <div class="flex items-center gap-3">
+          <a
+            routerLink="/admin/panel"
+            class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-white text-maiz shadow-sm hover:scale-105 transition"
+            aria-label="Volver al panel operativo"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+            </svg>
+          </a>
+
+          <h1 class="text-xl lg:text-3xl font-extrabold text-cacao">CRM Clientes</h1>
+        </div>
+
+        <button
+          type="button"
+          (click)="cargarClientes()"
+          class="px-4 py-2 rounded-full bg-white text-cacao text-xs font-extrabold shadow-xs hover:bg-crema transition cursor-pointer"
+        >
+          Actualizar
+        </button>
+      </div>
+
+      <input
+        type="text"
+        [(ngModel)]="busqueda"
+        placeholder="Buscar cliente..."
+        class="w-full px-4 py-2.5 rounded-full bg-white text-cacao text-sm border border-cacao/10 focus:outline-none"
+      />
+    </header>
+
+    <main class="px-5 lg:px-8 pt-6 bg-white rounded-b-[2rem] pb-8 shadow-xl border border-cacao/10 space-y-5">
+      <div class="flex flex-wrap gap-2">
+        <button
+          type="button"
+          (click)="filtro = 'todos'"
+          class="px-4 py-2 rounded-full text-xs font-extrabold transition cursor-pointer"
+          [class.bg-milpa]="filtro === 'todos'"
+          [class.text-white]="filtro === 'todos'"
+          [class.bg-crema]="filtro !== 'todos'"
+          [class.text-cacao]="filtro !== 'todos'"
+        >
+          Todos
+        </button>
+
+        <button
+          type="button"
+          (click)="filtro = 'domicilio'"
+          class="px-4 py-2 rounded-full text-xs font-extrabold transition cursor-pointer"
+          [class.bg-milpa]="filtro === 'domicilio'"
+          [class.text-white]="filtro === 'domicilio'"
+          [class.bg-crema]="filtro !== 'domicilio'"
+          [class.text-cacao]="filtro !== 'domicilio'"
+        >
+          A domicilio
+        </button>
+
+        <button
+          type="button"
+          (click)="filtro = 'negocio'"
+          class="px-4 py-2 rounded-full text-xs font-extrabold transition cursor-pointer"
+          [class.bg-milpa]="filtro === 'negocio'"
+          [class.text-white]="filtro === 'negocio'"
+          [class.bg-crema]="filtro !== 'negocio'"
+          [class.text-cacao]="filtro !== 'negocio'"
+        >
+          Negocios
+        </button>
+      </div>
+
+      @if (cargando()) {
+        <div class="space-y-3">
+          @for (n of [1, 2, 3]; track n) {
+            <div class="h-16 rounded-2xl bg-crema animate-pulse"></div>
+          }
+        </div>
+      } @else {
+        <div class="rounded-3xl bg-crema border border-cacao/10 shadow-sm divide-y divide-cacao/10">
+          @for (cliente of clientesFiltrados; track cliente.id) {
+            <a
+              [routerLink]="['/admin/crm', cliente.id]"
+              class="p-4 flex items-center justify-between gap-3 hover:bg-maiz/10 transition first:rounded-t-3xl last:rounded-b-3xl"
+            >
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-maiz/30 text-cacao font-extrabold text-xs flex items-center justify-center shrink-0">
+                  {{ cliente.nombre.slice(0, 2).toUpperCase() }}
+                </div>
+                <div class="flex flex-wrap items-center gap-2">
+                  <span class="text-sm font-extrabold text-cacao">{{ cliente.nombre }}</span>
+                  <span class="text-xs font-bold text-salsa">{{ cliente.frecuencia }}</span>
+                </div>
+              </div>
+
+              <span
+                class="w-7 h-3.5 rounded-full inline-block shrink-0"
+                [class.bg-milpa]="cliente.colorIndicador === 'verde'"
+                [class.bg-maiz]="cliente.colorIndicador === 'amarillo'"
+              ></span>
+            </a>
+          } @empty {
+            <div class="p-6 text-center">
+              <p class="text-sm font-bold text-cacao/75">No se encontraron clientes registrados.</p>
+            </div>
+          }
+        </div>
+      }
+    </main>
+  </div>
+
+  <app-menu-lateral [abierto]="menuAbierto" (cerrar)="menuAbierto = false" />
+</div>
