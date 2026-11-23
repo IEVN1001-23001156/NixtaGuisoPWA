@@ -1,0 +1,98 @@
+<div class="flex flex-wrap items-end justify-between gap-3">
+  <div><h1 class="text-3xl lg:text-4xl font-extrabold">Reportes y KPIs</h1><p class="text-sm opacity-70">Avance del plan de mercadeo contra sus metas · revisión semanal cada lunes</p></div>
+  <input type="month" class="campo-gris w-auto" [(ngModel)]="mes" (change)="cargar()" name="mes" aria-label="Mes">
+</div>
+
+@if (reporte(); as r) {
+  <!-- Tarjetas destacadas -->
+  <section class="mt-5 grid grid-cols-2 xl:grid-cols-4 gap-4">
+    <div class="tarjeta"><p class="text-sm font-bold">KPIs que cumplen</p><p class="mt-1 text-3xl font-black text-milpa">{{ r.resumen.metas_cumplidas }} de {{ r.resumen.metas_evaluadas }}</p><p class="text-xs opacity-70">Con datos este mes</p></div>
+    @for (k of [['csat','CSAT','4.5 o más'],['roas','ROAS','3 o más'],['costo_registro','Costo por registro','$40 o menos']]; track k[0]) {
+      <div class="tarjeta">
+        <p class="text-sm font-bold">{{ k[1] }}</p>
+        <p class="mt-1 text-3xl font-black" [class]="destacada(k[0])?.cumple === false ? 'text-nixta-naranja' : 'text-nixta-verde'">{{ valor(destacada(k[0])) }}</p>
+        <p class="text-xs opacity-70">Meta: {{ k[2] }}</p>
+      </div>
+    }
+  </section>
+
+  <section class="mt-5 grid gap-5 xl:grid-cols-[3fr_2fr] items-start">
+    <!-- Tabla de indicadores -->
+    <div class="tarjeta overflow-x-auto">
+      <h2 class="titulo-seccion">Indicadores del plan de mercadeo</h2>
+      <p class="text-xs opacity-60">Ventas del mes: {{ r.resumen.ventas_mes | currency:'MXN':'symbol-narrow':'1.0-0' }} · {{ r.resumen.pedidos_mes }} pedidos · {{ r.resumen.nuevos_registros }} registros nuevos</p>
+      <table class="tabla mt-3">
+        <thead><tr><th>Indicador</th><th>Meta</th><th class="text-right">Actual</th><th>Estado</th></tr></thead>
+        <tbody>
+          @for (m of todas(); track m.indicador) {
+            <tr>
+              <td class="font-semibold">{{ m.nombre }}</td>
+              <td class="text-xs">{{ textoMeta(m) }}</td>
+              <td class="text-right font-bold">{{ valor(m) }}</td>
+              <td><span class="chip" [class]="m.cumple ? 'chip bg-nixta-verde text-white' : m.cumple === false ? 'chip bg-nixta-naranja text-nixta-cafe' : 'chip bg-gray-200'">{{ m.cumple ? 'Cumple' : m.cumple === false ? 'Por debajo' : 'Sin datos' }}</span></td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Plan contra real -->
+    <div class="tarjeta">
+      <h2 class="titulo-seccion">Kilos por mes: plan y real</h2>
+      <p class="text-xs opacity-60">Proyección del documento (meses 1 a 6 de operación, desde marzo de 2027)</p>
+      <div class="mt-3 h-72"><canvas #plan></canvas></div>
+    </div>
+  </section>
+}
+
+<section class="mt-5 grid gap-5 xl:grid-cols-2 items-start">
+  <!-- Gastos -->
+  <div class="tarjeta">
+    <h2 class="titulo-seccion">Gastos de mercadeo del mes · {{ totalGastos() | currency:'MXN':'symbol-narrow':'1.2-2' }}</h2>
+    <p class="text-xs opacity-60">Necesarios para calcular el ROAS y el costo por registro.</p>
+    <div class="mt-3 grid gap-2 sm:grid-cols-2">
+      <select class="campo-gris" [(ngModel)]="nuevoGasto.categoria" name="categoria">@for (c of categorias; track c[0]) {<option [value]="c[0]">{{ c[1] }}</option>}</select>
+      <input class="campo-gris" [(ngModel)]="nuevoGasto.concepto" name="concepto" placeholder="Concepto (ej. Meta Ads)">
+      <input class="campo-gris" type="number" min="1" [(ngModel)]="nuevoGasto.monto" name="monto" placeholder="Monto">
+      <input class="campo-gris" type="date" [(ngModel)]="nuevoGasto.fecha" name="fechaGasto">
+      <button (click)="agregarGasto()" class="btn-verde sm:col-span-2" [disabled]="!nuevoGasto.concepto || !nuevoGasto.monto">Registrar gasto</button>
+    </div>
+    <ul class="mt-3 divide-y divide-nixta-cafe/10 text-sm">
+      @for (g of gastos(); track g.id_gasto) {
+        @if (gastoEditado()?.id_gasto === g.id_gasto) {
+          <li class="py-2 grid gap-2 sm:grid-cols-2">
+            <select class="campo-gris py-1.5" [(ngModel)]="gastoEditado()!.categoria" name="ecat">@for (c of categorias; track c[0]) {<option [value]="c[0]">{{ c[1] }}</option>}</select>
+            <input class="campo-gris py-1.5" [(ngModel)]="gastoEditado()!.concepto" name="econ">
+            <input class="campo-gris py-1.5" type="number" [(ngModel)]="gastoEditado()!.monto" name="emon">
+            <input class="campo-gris py-1.5" type="date" [(ngModel)]="gastoEditado()!.fecha" name="efec">
+            <div class="sm:col-span-2 flex gap-2"><button (click)="gastoEditado.set(null)" class="btn-borde btn-chico">Cancelar</button><button (click)="guardarGasto()" class="btn-verde btn-chico">Guardar</button></div>
+          </li>
+        } @else {
+          <li class="py-2 flex items-center gap-2">
+            <span class="flex-1"><strong>{{ g.concepto }}</strong> <span class="opacity-60">· {{ nombreCategoria(g.categoria) }} · {{ g.fecha }}</span></span>
+            <span class="font-semibold">{{ g.monto | currency:'MXN':'symbol-narrow':'1.2-2' }}</span>
+            <button (click)="editarGasto(g)" class="text-nixta-verde" aria-label="Editar gasto"><span class="material-symbols-rounded text-lg">edit</span></button>
+            <button (click)="eliminarGasto(g)" class="text-red-600" aria-label="Eliminar gasto"><span class="material-symbols-rounded text-lg">delete</span></button>
+          </li>
+        }
+      } @empty { <li class="py-2 opacity-60">Sin gastos registrados este mes</li> }
+    </ul>
+  </div>
+
+  <!-- Metas -->
+  <div class="tarjeta">
+    <h2 class="titulo-seccion">Metas del documento</h2>
+    <p class="text-xs opacity-60">Cambia el valor y sal del campo para guardarlo.</p>
+    <div class="mt-3 max-h-96 overflow-y-auto">
+      <table class="tabla">
+        <thead><tr><th>Indicador</th><th>Fecha</th><th class="w-28">Meta</th></tr></thead>
+        <tbody>
+          @for (m of metas(); track m.id_meta) {
+            <tr><td>{{ m.descripcion }}</td><td class="text-xs">{{ m.fecha_meta ?? 'Permanente' }}</td>
+              <td><input #campoMeta class="campo-gris py-1.5 text-right" type="number" [value]="m.valor_meta" (change)="guardarMeta(m, campoMeta.value)"></td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>

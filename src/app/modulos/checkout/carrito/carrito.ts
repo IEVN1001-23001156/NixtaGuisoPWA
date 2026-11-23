@@ -27,6 +27,8 @@ export class Carrito {
 
   continuarEntrega(): void {
     if (this.carritoService.items().length === 0) return;
+    // No avanza si no cumple el pedido mínimo o falta existencia (lo indica Flask)
+    if (!this.carritoService.puedeConfirmar()) return;
     this.router.navigate(['/checkout/entrega']);
   }
 }

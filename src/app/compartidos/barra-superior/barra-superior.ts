@@ -1,4 +1,4 @@
-import { Component, EventEmitter, inject, Output } from '@angular/core';
+import { Component, computed, EventEmitter, inject, Output } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { AuthRolService } from '../../servicios/auth-rol.service';
 import { FotoPerfilService } from '../../servicios/foto-perfil.service';
@@ -13,6 +13,10 @@ export class BarraSuperior {
   readonly fotoPerfilService = inject(FotoPerfilService);
 
   @Output() abrirMenu = new EventEmitter<void>();
+
+  readonly esAdmin = computed(
+    () => this.authRol.usuario()?.rol?.toLowerCase() === 'admin' || this.authRol.esAdmin()
+  );
 
   get inicialesUsuario(): string {
     const nombre = this.authRol.usuario()?.nombre?.trim();

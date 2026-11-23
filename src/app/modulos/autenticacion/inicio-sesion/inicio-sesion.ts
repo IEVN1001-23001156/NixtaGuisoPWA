@@ -39,8 +39,10 @@ export class InicioSesion {
       } else {
         await this.router.navigate(['/inicio']);
       }
-    } catch {
-      this.errorMensaje.set('No se pudo conectar con el servidor');
+    } catch (e: any) {
+      this.errorMensaje.set(
+        e?.status ? (e?.error?.mensaje || 'Correo o contraseña incorrectos') : 'No se pudo conectar con el servidor'
+      );
     } finally {
       this.cargando.set(false);
     }

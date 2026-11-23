@@ -1,10 +1,29 @@
-import { Injectable, signal, computed } from '@angular/core';
+import { Injectable, signal, computed, effect, inject } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
 import { ProductoCatalogo } from './catalogo.service';
 
 export interface ItemCarrito {
   producto: ProductoCatalogo;
   cantidad: number;
   notaEspecial: string;
+  salsa?: number | null;
+  agua?: number | null;
+  opcionesTexto?: string;
+  arma?: ArmaPaquete;
+}
+
+export interface ArmaPaquete {
+  tortilla: number;
+  guisado: number;
+  salsa: number;
+  agua: number;
+  texto: string;
+}
+
+export interface OpcionesPaquete {
+  salsa: number | null;
+  agua: number | null;
+  texto: string;
 }
 
 export interface DatosEntrega {
@@ -14,36 +33,147 @@ export interface DatosEntrega {
   referencias: string;
 }
 
+interface CalculoServidor {
+  exito: boolean;
+  mensaje?: string;
+  subtotal: number;
+  descuento: number;
+  motivo_descuento: string | null;
+  costo_envio: number;
+  total: number;
+  cumple_minimo: boolean;
+  mensaje_minimo: string | null;
+  faltantes: { nombre: string }[];
+  puede_confirmar: boolean;
+}
+
 @Injectable({
   providedIn: 'root',
 })
 export class CarritoService {
-  readonly items = signal<ItemCarrito[]>([]);
-  readonly envio = signal<number>(25);
+  private readonly usuarioActivoId = signal<number | null>(null);
+  readonly items = signal<ItemCarrito[]>(this.leerCarritoGuardado(null));
+
+  private readonly guardarCarrito = effect(() => {
+    const id = this.usuarioActivoId();
+    const lista = this.items();
+    try {
+      localStorage.setItem(this.claveCarrito(id), JSON.stringify(lista));
+    } catch {
+      // Si el navegador no permite guardar, el carrito dura mientras la página esté abierta
+    }
+  });
+
+  private claveCarrito(idUsuario: number | null): string {
+    return `nixtaguiso_carrito_${idUsuario ?? 'invitado'}`;
+  }
+
+  private leerCarritoGuardado(idUsuario: number | null): ItemCarrito[] {
+    try {
+      const guardado = JSON.parse(localStorage.getItem(this.claveCarrito(idUsuario)) || '[]');
+      return Array.isArray(guardado) ? guardado : [];
+    } catch {
+      return [];
+    }
+  }
+
+  private readonly http = inject(HttpClient);
+
+  /**
+   * Cálculo oficial de Flask (/api/pedidos/calcular): precio según el tipo de cliente,
+   * descuento de primer pedido, envío ($30, gratis desde $250) y pedido mínimo.
+   */
+  readonly calculo = signal<CalculoServidor | null>(null);
+  private esperaCalculo?: ReturnType<typeof setTimeout>;
+
+  private readonly recalcular = effect(() => {
+    const items = this.items();
+    clearTimeout(this.esperaCalculo);
+    if (items.length === 0) {
+      this.calculo.set(null);
+      return;
+    }
+    this.esperaCalculo = setTimeout(() => {
+      this.http.post<CalculoServidor>('http://localhost:5000/api/pedidos/calcular', {
+        productos: items.map((i) => ({ id_producto: i.producto.id, cantidad: i.cantidad, salsa: i.salsa, agua: i.agua, arma: i.arma })),
+        modalidad: 'domicilio',
+      }, { withCredentials: true }).subscribe({
+        next: (r) => this.calculo.set(r),
+        error: (e) => this.calculo.set({ exito: false, mensaje: e?.error?.mensaje } as CalculoServidor),
+      });
+    }, 300);
+  });
+
+  readonly envio = computed(() => this.calculo()?.costo_envio ?? 30);
+  readonly descuento = computed(() => this.calculo()?.descuento ?? 0);
+  readonly motivoDescuento = computed(() => this.calculo()?.motivo_descuento ?? null);
+  readonly avisoServidor = computed(() => {
+    const c = this.calculo();
+    if (!c) return null;
+    if (c.exito === false) return c.mensaje || 'No se pudo calcular el total';
+    if (!c.cumple_minimo) return c.mensaje_minimo;
+    if (c.faltantes?.length) return `Sin existencia suficiente de: ${c.faltantes.map((f) => f.nombre).join(', ')}`;
+    return null;
+  });
+  readonly puedeConfirmar = computed(() => !!this.calculo()?.puede_confirmar);
   readonly direccionEntrega = signal<DatosEntrega>(this.cargarDireccionInicial());
 
   readonly totalArticulos = computed(() =>
     this.items().reduce((acc, item) => acc + item.cantidad, 0)
   );
 
-  readonly subtotal = computed(() =>
-    this.items().reduce((acc, item) => acc + item.producto.precio * item.cantidad, 0)
-  );
+  readonly subtotal = computed(() => {
+    const c = this.calculo();
+    if (c?.exito !== false && c?.subtotal !== undefined) return c.subtotal;
+    return this.items().reduce((acc, item) => acc + item.producto.precio * item.cantidad, 0);
+  });
 
-  readonly total = computed(() =>
-    this.items().length > 0 ? this.subtotal() + this.envio() : 0
-  );
+  readonly total = computed(() => {
+    if (this.items().length === 0) return 0;
+    const c = this.calculo();
+    return c?.exito !== false && c?.total !== undefined ? c.total : this.subtotal() + this.envio();
+  });
 
   readonly direccionResumen = computed(() => {
     const d = this.direccionEntrega();
     return [d.calle, d.colonia, d.ciudad].map((v) => v?.trim()).filter(Boolean).join(', ');
   });
 
-  agregarProducto(producto: ProductoCatalogo, cantidad = 1, notaEspecial = ''): void {
+  cargarCarritoUsuario(idUsuario: number | null): void {
+    const idAnterior = this.usuarioActivoId();
+    if (idAnterior === idUsuario) return;
+
+    const itemsInvitado = idAnterior === null && idUsuario !== null ? this.items() : [];
+    const itemsGuardados = this.leerCarritoGuardado(idUsuario);
+
+    this.usuarioActivoId.set(idUsuario);
+    this.items.set(itemsGuardados);
+
+    if (itemsInvitado.length > 0) {
+      for (const item of itemsInvitado) {
+        this.agregarProducto(
+          item.producto,
+          item.cantidad,
+          item.notaEspecial,
+          { salsa: item.salsa ?? null, agua: item.agua ?? null, texto: item.opcionesTexto ?? '' },
+          item.arma
+        );
+      }
+      try {
+        localStorage.removeItem(this.claveCarrito(null));
+      } catch {}
+    }
+  }
+
+  agregarProducto(producto: ProductoCatalogo, cantidad = 1, notaEspecial = '', opciones?: OpcionesPaquete, arma?: ArmaPaquete): void {
     const notaLimpia = notaEspecial.trim();
+    const salsa = opciones?.salsa ?? null;
+    const agua = opciones?.agua ?? null;
     this.items.update((actual) => {
       const idx = actual.findIndex(
-        (i) => i.producto.id === producto.id && i.notaEspecial === notaLimpia
+        (i) => i.producto.id === producto.id && i.notaEspecial === notaLimpia &&
+               (i.salsa ?? null) === salsa && (i.agua ?? null) === agua &&
+               JSON.stringify(i.arma ?? null) === JSON.stringify(arma ?? null)
       );
       if (idx >= 0) {
         const copia = [...actual];
@@ -53,7 +183,8 @@ export class CarritoService {
         };
         return copia;
       }
-      return [...actual, { producto, cantidad, notaEspecial: notaLimpia }];
+      return [...actual, { producto, cantidad, notaEspecial: notaLimpia, salsa, agua,
+                           opcionesTexto: arma?.texto ?? opciones?.texto, arma }];
     });
   }
 

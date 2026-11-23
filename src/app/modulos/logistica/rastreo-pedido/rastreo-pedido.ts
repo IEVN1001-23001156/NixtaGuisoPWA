@@ -12,7 +12,6 @@ import { RouterLink } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import * as L from 'leaflet';
-import { BarraInferior } from '../../../compartidos/barra-inferior/barra-inferior';
 import { BarraSuperior } from '../../../compartidos/barra-superior/barra-superior';
 import { MenuLateral } from '../../../compartidos/menu-lateral/menu-lateral';
 
@@ -36,7 +35,7 @@ interface RespuestaRastreo {
 }
 
 @Component({
-  imports: [RouterLink, BarraInferior, MenuLateral, BarraSuperior],
+  imports: [RouterLink, MenuLateral, BarraSuperior],
   selector: 'app-rastreo-pedido',
   styleUrl: './rastreo-pedido.css',
   templateUrl: './rastreo-pedido.html',
@@ -54,9 +53,9 @@ export class RastreoPedido implements OnInit, AfterViewInit, OnDestroy {
   tiempoEstimado = signal<string>('Calculando...');
   direccionEntrega = signal<string>('León, Guanajuato');
   repartidor = signal<{ nombre: string; telefono: string; placa: string }>({
-    nombre: 'Sergio Gonzales',
-    telefono: '477321998',
-    placa: 'WLU-94-69',
+    nombre: 'Por asignar',
+    telefono: '',
+    placa: '—',
   });
 
   private origen: Coordenadas = { lat: 21.1221, lng: -101.6826 };
@@ -108,12 +107,19 @@ export class RastreoPedido implements OnInit, AfterViewInit, OnDestroy {
         }
         if (resp.repartidor) {
           this.repartidor.set(resp.repartidor);
+        } else {
+          this.repartidor.set({ nombre: 'Por asignar', telefono: '', placa: '—' });
         }
         if (this.vistaLista) {
           await this.dibujarRutaReal();
         }
       }
-    } catch {}
+    } catch {
+      // 404 = el cliente no tiene pedidos en curso
+      this.direccionEntrega.set('No tienes pedidos en curso');
+      this.estadoPedido.set('Preparando');
+      this.tiempoEstimado.set('—');
+    }
   }
 
   private async dibujarRutaReal(): Promise<void> {

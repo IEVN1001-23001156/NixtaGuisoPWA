@@ -49,6 +49,31 @@
               {{ producto().descripcion }}
             </p>
 
+            @if (producto().esPaquete) {
+              <!-- Elige la salsa y el agua de tu paquete (el precio no cambia) -->
+              <div class="mt-6 grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label class="block text-xs lg:text-sm font-bold text-cacao mb-2">Salsa</label>
+                  <select [(ngModel)]="salsaElegida"
+                          class="w-full rounded-2xl border border-cacao/15 bg-white px-4 py-3 text-sm font-semibold text-cacao">
+                    @for (s of salsas(); track s.id) {
+                      <option [ngValue]="s.id" [disabled]="s.agotado">{{ s.nombre }}{{ s.agotado ? ' (agotada)' : '' }}</option>
+                    }
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-xs lg:text-sm font-bold text-cacao mb-2">Agua fresca</label>
+                  <select [(ngModel)]="aguaElegida"
+                          class="w-full rounded-2xl border border-cacao/15 bg-white px-4 py-3 text-sm font-semibold text-cacao">
+                    @for (a of aguas(); track a.id) {
+                      <option [ngValue]="a.id" [disabled]="a.agotado">{{ a.nombre }}{{ a.agotado ? ' (agotada)' : '' }}</option>
+                    }
+                  </select>
+                </div>
+              </div>
+              <p class="mt-2 text-xs text-cacao/70">¿Prefieres elegir también la tortilla y el guisado? <a routerLink="/arma-tu-paquete" class="font-bold text-milpa underline">Arma tu Comida Completa</a></p>
+            }
+
             <div class="mt-6">
               <label class="block text-xs lg:text-sm font-bold text-cacao mb-2">Cantidad</label>
               <div class="inline-flex items-center gap-4 bg-white lg:bg-crema px-4 py-2 rounded-full border border-cacao/15">
@@ -75,7 +100,7 @@
               <input
                 type="text"
                 [(ngModel)]="notaEspecial"
-                placeholder="Ej. Tortillas bien calientes, salsa aparte..."
+                [placeholder]="ejemploNota()"
                 class="w-full px-4 py-3 rounded-xl bg-white lg:bg-crema text-cacao text-sm border border-cacao/15 focus:outline-none focus:ring-2 focus:ring-maiz"
               />
             </div>
@@ -85,9 +110,10 @@
             <button
               type="button"
               (click)="agregarAlCarrito()"
+              [disabled]="producto().agotado"
               class="w-full py-4 rounded-full bg-milpa text-white font-bold text-base lg:text-lg shadow-md hover:bg-milpa/90 active:scale-[0.99] transition cursor-pointer"
             >
-              Agregar al carrito · ${{ producto().precio * cantidad }} MXN
+              {{ producto().agotado ? 'Agotado por hoy' : 'Agregar al carrito · $' + (producto().precio * cantidad) + ' MXN' }}
             </button>
           </div>
         </div>

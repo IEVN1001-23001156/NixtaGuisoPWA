@@ -17,3 +17,50 @@ body {
   font-family: var(--font-sans);
   margin: 0;
 }
+
+@theme {
+  --color-nixta-naranja: #F2A922;   
+  --color-nixta-crema: #F6F4DD;     
+  --color-nixta-verde: #3B6E3C;    
+  --color-nixta-cafe: #4E342E;     
+  --color-nixta-dorado: #C9963C;   
+  --color-nixta-amarillo: #F7D27A;
+
+}
+
+@layer components {
+  .tarjeta { @apply bg-white rounded-3xl border border-cacao/10 shadow-xs p-5 text-cacao; }
+  .titulo-seccion { @apply text-lg font-extrabold; }
+  .etiqueta { @apply block text-sm font-semibold mb-1; }
+  .campo { @apply w-full rounded-2xl bg-white px-4 py-3 outline-none border-2 border-transparent focus:border-nixta-naranja transition; }
+  .campo-gris { @apply w-full rounded-2xl bg-nixta-crema px-4 py-2.5 outline-none border-2 border-transparent focus:border-nixta-naranja transition; }
+  .btn { @apply inline-flex items-center justify-center gap-2 rounded-full font-semibold px-5 py-3 transition active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none; }
+  .btn-verde { @apply inline-flex items-center justify-center gap-2 rounded-full font-semibold px-5 py-3 transition active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none bg-nixta-verde text-white hover:brightness-110; }
+  .btn-cafe { @apply inline-flex items-center justify-center gap-2 rounded-full font-semibold px-5 py-3 transition active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none bg-nixta-cafe text-white hover:brightness-110; }
+  .btn-naranja { @apply inline-flex items-center justify-center gap-2 rounded-full font-semibold px-5 py-3 transition active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none bg-nixta-naranja text-nixta-cafe hover:brightness-105; }
+  .btn-borde { @apply inline-flex items-center justify-center gap-2 rounded-full font-semibold px-5 py-3 transition active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none border-2 border-nixta-cafe hover:bg-nixta-cafe hover:text-white; }
+  .btn-chico { @apply px-3 py-1.5 text-sm; }
+  .chip { @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-bold; }
+  .error-campo { @apply text-xs text-red-600; }
+  .caja-error { @apply rounded-2xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700; }
+  .tabla { @apply w-full text-sm; }
+  .tabla th { @apply text-left font-bold px-3 py-2 bg-nixta-crema; }
+  .tabla td { @apply px-3 py-2 border-t border-nixta-cafe/10; }
+}
+
+.marcador-mapa { background: transparent; border: none; }
+
+.material-symbols-rounded {
+  font-family: 'Material Symbols Rounded';
+  font-weight: normal;
+  font-style: normal;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  direction: ltr;
+  -webkit-font-smoothing: antialiased;
+  font-variation-settings: 'FILL' 1, 'wght' 500, 'GRAD' 0, 'opsz' 24;
+  user-select: none;
+}

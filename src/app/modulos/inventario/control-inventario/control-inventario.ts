@@ -3,7 +3,6 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
-import { BarraInferior } from '../../../compartidos/barra-inferior/barra-inferior';
 import { BarraSuperior } from '../../../compartidos/barra-superior/barra-superior';
 import { MenuLateral } from '../../../compartidos/menu-lateral/menu-lateral';
 
@@ -43,7 +42,7 @@ interface RespuestaInventarioBd {
 }
 
 @Component({
-  imports: [FormsModule, RouterLink, BarraSuperior, BarraInferior, MenuLateral],
+  imports: [FormsModule, RouterLink, BarraSuperior, MenuLateral],
   selector: 'app-control-inventario',
   styleUrl: './control-inventario.css',
   templateUrl: './control-inventario.html',
@@ -102,7 +101,7 @@ export class ControlInventario implements OnInit {
           resp.mermas.map((m) => ({
             id: m.id_merma,
             fecha: m.fecha,
-            producto: 'Producto en inventario',
+            producto: (m as any).producto || 'Producto en inventario',
             cantidadPerdida: `${m.cantidad}`,
             motivo: m.motivo,
           }))
@@ -248,8 +247,10 @@ export class ControlInventario implements OnInit {
 
       this.mensajeEstado.set(`Merma de ${cant} registrada para ${nombreProd}.`);
       this.cantidadMerma = null;
-    } catch {
-      this.errorMensaje.set('Error al registrar la merma en la base de datos.');
+    } catch (e: any) {
+      this.errorMensaje.set(
+        e?.status ? (e?.error?.mensaje || 'No se pudo registrar la merma.') : 'No se pudo conectar con el servidor.'
+      );
     }
   }
 }

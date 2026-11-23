@@ -104,8 +104,8 @@ export class FormularioEspecial implements OnInit {
 
       this.mensajeEstado.set('Pedido especial registrado.');
       this.especificaciones = '';
-    } catch {
-      this.errorMensaje.set('No se pudo conectar con el servidor.');
+    } catch (e: any) {
+      this.errorMensaje.set(e?.status ? (e?.error?.mensaje || 'No se pudo guardar la solicitud.') : 'No se pudo conectar con el servidor.');
     } finally {
       this.enviando.set(false);
     }

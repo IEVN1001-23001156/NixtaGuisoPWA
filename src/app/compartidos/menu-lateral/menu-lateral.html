@@ -51,15 +51,7 @@
               (click)="cerrarMenu()"
               class="px-4 py-3 rounded-2xl text-base font-extrabold text-cacao hover:bg-maiz/20 transition"
             >
-              Inventario e insumos
-            </a>
-
-            <a
-              routerLink="/admin/logistica"
-              (click)="cerrarMenu()"
-              class="px-4 py-3 rounded-2xl text-base font-extrabold text-cacao hover:bg-maiz/20 transition"
-            >
-              Logística y entregas
+              Inventario y producción
             </a>
 
             <a
@@ -67,16 +59,25 @@
               (click)="cerrarMenu()"
               class="px-4 py-3 rounded-2xl text-base font-extrabold text-cacao hover:bg-maiz/20 transition"
             >
-              Clientes CRM
+              Clientes (CRM)
             </a>
 
             <a
-              routerLink="/perfil"
+              routerLink="/admin/logistica"
               (click)="cerrarMenu()"
               class="px-4 py-3 rounded-2xl text-base font-extrabold text-cacao hover:bg-maiz/20 transition"
             >
-              Mi perfil
+              Logística y despacho
             </a>
+
+            <a
+              routerLink="/admin/reportes"
+              (click)="cerrarMenu()"
+              class="px-4 py-3 rounded-2xl text-base font-extrabold text-cacao hover:bg-maiz/20 transition"
+            >
+              Reportes y KPIs
+            </a>
+
           </nav>
         } @else {
           <nav class="mt-6 flex flex-col space-y-2">
@@ -86,6 +87,14 @@
               class="px-4 py-3 rounded-2xl text-base font-extrabold text-cacao hover:bg-maiz/20 transition"
             >
               Configuración
+            </a>
+
+            <a
+              routerLink="/arma-tu-paquete"
+              (click)="cerrarMenu()"
+              class="px-4 py-3 rounded-2xl text-base font-extrabold text-cacao hover:bg-maiz/20 transition"
+            >
+              Arma tu paquete
             </a>
 
             <a
@@ -102,6 +111,14 @@
               class="px-4 py-3 rounded-2xl text-base font-extrabold text-cacao hover:bg-maiz/20 transition"
             >
               Pedidos programados
+            </a>
+
+            <a
+              routerLink="/rastreo"
+              (click)="cerrarMenu()"
+              class="px-4 py-3 rounded-2xl text-base font-extrabold text-cacao hover:bg-maiz/20 transition"
+            >
+              Rastrear mi pedido
             </a>
 
             <a

@@ -3,7 +3,6 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
-import { BarraInferior } from '../../../compartidos/barra-inferior/barra-inferior';
 import { BarraSuperior } from '../../../compartidos/barra-superior/barra-superior';
 import { MenuLateral } from '../../../compartidos/menu-lateral/menu-lateral';
 import { CatalogoService, ProductoCatalogo } from '../../../servicios/catalogo.service';
@@ -19,7 +18,7 @@ interface ProductoMenuItem {
 }
 
 @Component({
-  imports: [FormsModule, RouterLink, BarraSuperior, BarraInferior, MenuLateral],
+  imports: [FormsModule, RouterLink, BarraSuperior, MenuLateral],
   selector: 'app-listado-menu',
   styleUrl: './listado-menu.css',
   templateUrl: './listado-menu.html',
@@ -47,7 +46,7 @@ export class ListadoMenu implements OnInit {
   async cargarProductos(): Promise<void> {
     this.cargando.set(true);
     try {
-      const lista = await this.catalogoService.obtenerProductos('B2C', 1);
+      const lista = await this.catalogoService.obtenerProductos('B2C', 1, true);
       if (lista.length > 0) {
         this.productos.set(lista.map((p) => this.mapearProducto(p)));
       }
@@ -125,7 +124,7 @@ export class ListadoMenu implements OnInit {
       categoria: p.categoria || 'General',
       precioB2c: Number(p.precioB2c ?? p.precio ?? 0),
       imagenSrc: this.catalogoService.resolverUrlImagen(p.imagenUrl),
-      activo: true,
+      activo: p.disponible ?? true,
     };
   }
 }

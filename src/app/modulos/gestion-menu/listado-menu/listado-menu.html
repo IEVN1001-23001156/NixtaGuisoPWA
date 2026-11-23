@@ -1,20 +1,20 @@
 <div class="min-h-screen bg-crema pb-24">
   <app-barra-superior (abrirMenu)="menuAbierto = true" />
 
-  <div class="max-w-5xl mx-auto px-5 lg:px-6 pt-6 lg:pt-8">
+  <div class="max-w-5xl mx-auto px-4 sm:px-5 lg:px-6 pt-6 lg:pt-8">
     <header class="bg-maiz px-5 pt-6 pb-7 rounded-t-[2rem] shadow-sm">
       <div class="flex items-center justify-between gap-3 mb-4">
-        <div class="flex items-center gap-3">
+        <div class="flex items-center gap-3 min-w-0">
           <a
             routerLink="/admin/panel"
-            class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-white text-maiz shadow-sm hover:scale-105 transition"
+            class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-white text-maiz shadow-sm hover:scale-105 transition shrink-0"
             aria-label="Volver al panel operativo"
           >
             <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
             </svg>
           </a>
-          <h1 class="text-xl lg:text-3xl font-extrabold text-cacao">Gestión de Menú</h1>
+          <h1 class="text-xl lg:text-3xl font-extrabold text-cacao truncate">Gestión de Menú</h1>
         </div>
       </div>
 
@@ -25,7 +25,7 @@
         class="w-full px-4 py-3 rounded-xl bg-white text-cacao text-sm border border-cacao/10 focus:outline-none focus:ring-2 focus:ring-cacao/25"
       />
 
-      <div class="flex items-center gap-3 overflow-x-auto pt-4 pb-1">
+      <div class="flex items-center gap-2.5 overflow-x-auto pt-4 pb-1">
         @for (cat of categorias; track cat) {
           <button
             type="button"
@@ -42,11 +42,11 @@
       </div>
     </header>
 
-    <main class="px-5 lg:px-8 pt-6 bg-white rounded-b-[2rem] pb-8 shadow-xl border border-cacao/10 space-y-5">
+    <main class="px-4 sm:px-5 lg:px-8 pt-6 bg-white rounded-b-[2rem] pb-8 shadow-xl border border-cacao/10 space-y-5">
       <div class="flex justify-center">
         <a
           routerLink="/admin/menu/nuevo"
-          class="px-6 py-3 rounded-full bg-milpa text-white text-sm font-extrabold shadow-md hover:bg-milpa/90 transition"
+          class="px-6 py-3 rounded-full bg-milpa text-white text-sm font-extrabold shadow-md hover:bg-milpa/90 transition whitespace-nowrap"
         >
           + Nuevo Producto
         </a>
@@ -65,7 +65,7 @@
       } @else {
         <div class="space-y-3">
           @for (prod of productosFiltrados; track prod.id) {
-            <div class="p-4 rounded-2xl bg-crema border border-cacao/10 shadow-2xs flex items-center justify-between gap-4">
+            <div class="p-4 rounded-2xl bg-crema border border-cacao/10 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div class="flex items-center gap-3.5 min-w-0">
                 <img
                   [src]="prod.imagenSrc"
@@ -73,15 +73,15 @@
                   class="w-16 h-16 rounded-2xl object-cover bg-maiz/20 border border-cacao/10 shrink-0"
                 />
 
-                <div class="min-w-0">
+                <div class="min-w-0 space-y-0.5">
                   <h2 class="text-sm lg:text-base font-extrabold text-cacao truncate">{{ prod.nombre }}</h2>
-                  <p class="text-xs text-milpa underline font-semibold">{{ prod.presentacion }}</p>
-                  <p class="text-sm font-black text-salsa mt-0.5">${{ prod.precioB2c }} MXN</p>
+                  <p class="text-xs text-milpa font-semibold">{{ prod.presentacion }}</p>
+                  <p class="text-sm font-black text-salsa">${{ prod.precioB2c }} MXN</p>
                 </div>
               </div>
 
-              <div class="flex flex-col gap-1.5 shrink-0">
-                <label class="px-3.5 py-1 rounded-full bg-cacao text-crema text-[11px] font-extrabold text-center hover:opacity-90 transition cursor-pointer">
+              <div class="flex flex-wrap sm:flex-col items-end gap-2 shrink-0">
+                <label class="px-3.5 py-1.5 rounded-full bg-cacao text-crema text-[11px] font-extrabold text-center hover:opacity-90 transition cursor-pointer whitespace-nowrap">
                   Subir foto
                   <input
                     type="file"
@@ -92,16 +92,16 @@
                 </label>
                 <a
                   [routerLink]="['/admin/menu/editar', prod.id]"
-                  class="px-4 py-1 rounded-full bg-salsa text-white text-[11px] font-extrabold text-center hover:opacity-90 transition"
+                  class="px-4 py-1.5 rounded-full bg-salsa text-white text-[11px] font-extrabold text-center hover:opacity-90 transition whitespace-nowrap"
                 >
                   Editar
                 </a>
                 <button
                   type="button"
                   (click)="alternarEstado(prod.id)"
-                  class="px-4 py-1 rounded-full text-[11px] font-extrabold text-white transition cursor-pointer"
+                  class="px-4 py-1.5 rounded-full text-[11px] font-extrabold text-white transition cursor-pointer whitespace-nowrap"
                   [class.bg-milpa]="prod.activo"
-                  [class.bg-cacao/50]="!prod.activo"
+                  [class.bg-cacao/75]="!prod.activo"
                 >
                   {{ prod.activo ? 'Activo' : 'Inactivo' }}
                 </button>

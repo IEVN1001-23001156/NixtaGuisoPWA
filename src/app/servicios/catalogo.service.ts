@@ -18,6 +18,8 @@ export interface ProductoCatalogo {
   descripcion: string;
   existencia: number;
   imagenUrl: string | null;
+  disponible?: boolean;
+  agotado?: boolean;
 }
 
 interface RespuestaCatalogo {
@@ -367,7 +369,8 @@ export class CatalogoService {
   async obtenerProductos(
     tipoCuenta: TipoCuenta,
     nivelB2b: number | null = 1
-  ): Promise<ProductoCatalogo[]> {
+  ,
+    incluirPausados = false): Promise<ProductoCatalogo[]> {
     const params = new URLSearchParams();
     if (tipoCuenta) {
       params.set('tipo', tipoCuenta);
@@ -399,7 +402,7 @@ export class CatalogoService {
         .filter((fila) => {
           const activo = fila['activo'] === undefined ? true : Boolean(fila['activo']);
           const disponible = fila['disponible'] === undefined ? true : Boolean(fila['disponible']);
-          return activo && disponible;
+          return activo;
         })
         .map((fila, idx) => this.normalizarProducto(fila, idx + 1, tipoCuenta, nivelB2b));
     } catch {
@@ -441,6 +444,10 @@ export class CatalogoService {
     const limpia = imagenUrl.trim();
     if (limpia.startsWith('http://') || limpia.startsWith('https://')) {
       return limpia;
+    }
+    // Las fotos subidas viven en Flask (/uploads/productos/...), no en Angular
+    if (limpia.startsWith('/uploads/')) {
+      return `http://localhost:5000${limpia}`;
     }
     if (limpia.startsWith('/')) {
       return limpia;
@@ -512,6 +519,8 @@ export class CatalogoService {
       etiqueta: presentacion,
       descripcion: String(fila['descripcion'] ?? ''),
       existencia: Number(fila['existencia'] ?? 0),
+      disponible: fila['disponible'] === undefined ? true : Boolean(fila['disponible']),
+      agotado: Boolean(fila['agotado']),
       imagenUrl: imagenUrlRaw ? String(imagenUrlRaw) : null,
     };
   }

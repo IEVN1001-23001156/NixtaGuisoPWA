@@ -12,7 +12,6 @@ import { RouterLink } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import * as L from 'leaflet';
-import { BarraInferior } from '../../../compartidos/barra-inferior/barra-inferior';
 import { BarraSuperior } from '../../../compartidos/barra-superior/barra-superior';
 import { MenuLateral } from '../../../compartidos/menu-lateral/menu-lateral';
 
@@ -35,7 +34,7 @@ interface PedidoRuta {
 }
 
 @Component({
-  imports: [RouterLink, BarraSuperior, BarraInferior, MenuLateral],
+  imports: [RouterLink, BarraSuperior, MenuLateral],
   selector: 'app-mapa-despacho',
   styleUrl: './mapa-despacho.css',
   templateUrl: './mapa-despacho.html',

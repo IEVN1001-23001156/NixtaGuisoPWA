@@ -1,0 +1,90 @@
+<div><h1 class="text-3xl lg:text-4xl font-extrabold">Clientes y segmentación</h1><p class="text-sm opacity-70">Fichas con RFC, nivel B2B y preferencias</p></div>
+
+<section class="mt-5 grid gap-5 xl:grid-cols-[380px_1fr] items-start">
+  <!-- Lista -->
+  <div class="tarjeta p-4">
+    <div class="flex flex-wrap gap-2">
+      @for (t of [['', 'Todos'], ['B2C', 'A domicilio'], ['B2B', 'Negocios']]; track t[0]) {
+        <button (click)="filtrar(t[0])" class="btn btn-chico border-2" [class]="tipo() === t[0] ? 'bg-nixta-cafe text-white border-nixta-cafe' : 'border-nixta-cafe/20'">{{ t[1] }}</button>
+      }
+    </div>
+    <input class="campo-gris mt-3" [(ngModel)]="buscar" (input)="cargar()" name="buscar" placeholder="Buscar por nombre, negocio o correo">
+    <ul class="mt-3 space-y-2 max-h-[65vh] overflow-y-auto pr-1">
+      @for (c of clientes(); track c.id_cliente) {
+        <li>
+          <button (click)="abrir(c.id_cliente)" class="w-full text-left rounded-2xl p-3 flex items-center gap-3 border-2 transition"
+                  [class]="ficha()?.id_cliente === c.id_cliente ? 'border-nixta-verde bg-nixta-verde/5' : 'border-transparent bg-nixta-crema hover:border-nixta-cafe/15'">
+            <span class="w-10 h-10 rounded-full grid place-items-center font-extrabold shrink-0" [class]="c.tipo === 'B2B' ? 'bg-nixta-verde text-white' : 'bg-nixta-naranja'">{{ (c.nombre_negocio || c.nombre).charAt(0) }}</span>
+            <div class="flex-1 min-w-0">
+              <p class="font-bold truncate" [class.opacity-50]="!c.activo">{{ c.nombre_negocio || c.nombre }}</p>
+              <p class="text-xs opacity-70">{{ c.tipo === 'B2B' ? 'Negocio B2B · Nivel ' + c.nivel_b2b : 'Hogar B2C' }} · {{ c.frecuencia }}</p>
+            </div>
+            <span class="text-xs font-bold">{{ c.total_comprado | currency:'MXN':'symbol-narrow':'1.0-0' }}</span>
+          </button>
+        </li>
+      } @empty { <li class="text-sm opacity-60 p-2">Sin clientes con esos filtros</li> }
+    </ul>
+  </div>
+
+  <!-- Ficha -->
+  @if (ficha(); as c) {
+    <div class="space-y-5">
+      <div class="tarjeta">
+        <div class="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 class="text-2xl font-extrabold">{{ c.nombre_negocio || c.nombre }}</h2>
+            <p class="text-sm opacity-70">{{ c.tipo === 'B2B' ? 'Negocio B2B' : 'Hogar B2C' }} @if (c.nombre_negocio) {· contacto: {{ c.nombre }}}</p>
+          </div>
+          <button (click)="actualizar({ activo: !c.activo })" class="btn btn-chico" [class]="c.activo ? 'bg-red-50 text-red-700' : 'bg-nixta-verde text-white'">{{ c.activo ? 'Desactivar cuenta' : 'Activar cuenta' }}</button>
+        </div>
+        <dl class="mt-4 grid gap-3 sm:grid-cols-2 text-sm">
+          <div><dt class="font-bold">Teléfono</dt><dd>{{ c.telefono }}</dd></div>
+          <div><dt class="font-bold">Correo</dt><dd>{{ c.correo }}</dd></div>
+          <div class="sm:col-span-2"><dt class="font-bold">Dirección de entrega</dt><dd>{{ c.direccion || '—' }}</dd></div>
+          @if (c.tipo === 'B2B') { <div><dt class="font-bold">RFC</dt><dd>{{ c.rfc || '—' }}</dd></div> }
+          <div><dt class="font-bold">Registrado</dt><dd>{{ c.fecha_registro }} @if (c.referido_por) {· invitado por {{ c.referido_por }}}</dd></div>
+        </dl>
+        <div class="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-xs">
+          <div class="rounded-2xl bg-nixta-crema p-2"><p class="text-lg font-black">{{ totales(c).pedidos }}</p>Pedidos</div>
+          <div class="rounded-2xl bg-nixta-crema p-2"><p class="text-lg font-black">{{ totales(c).comprado | currency:'MXN':'symbol-narrow':'1.0-0' }}</p>Comprado</div>
+          <div class="rounded-2xl bg-nixta-crema p-2"><p class="text-lg font-black">{{ c.saldo_favor | currency:'MXN':'symbol-narrow':'1.0-0' }}</p>Saldo</div>
+          <div class="rounded-2xl bg-nixta-crema p-2"><p class="text-lg font-black">{{ c.calificacion_promedio ?? '—' }}</p>CSAT</div>
+        </div>
+      </div>
+
+      @if (c.tipo === 'B2B') {
+        <div class="tarjeta">
+          <h2 class="titulo-seccion">Nivel B2B asignado</h2>
+          <div class="mt-3 grid grid-cols-2 gap-3">
+            @for (n of [1, 2]; track n) {
+              <button (click)="actualizar({ nivel_b2b: n })" class="btn border-2" [class]="c.nivel_b2b === n ? 'bg-nixta-verde text-white border-nixta-verde' : 'border-nixta-cafe/20'">Nivel {{ n }} ({{ n === 1 ? '−10 %' : '−15 %' }})</button>
+            }
+          </div>
+          @if (consumo(); as k) {
+            <p class="mt-3 text-sm rounded-2xl px-3 py-2" [class]="k.nivel_recomendado === c.nivel_b2b ? 'bg-nixta-verde/10 text-nixta-verde' : 'bg-nixta-amarillo/50'">
+              {{ k.motivo }} {{ k.nivel_recomendado === c.nivel_b2b ? 'Nivel bien asignado ✓' : 'Conviene cambiarlo.' }}
+            </p>
+          }
+        </div>
+      }
+
+      <div class="tarjeta">
+        <h2 class="titulo-seccion">Preferencias especiales</h2>
+        <p class="text-xs opacity-60">Se muestran al preparar cada pedido de este cliente.</p>
+        <textarea rows="2" class="campo-gris mt-2" [(ngModel)]="preferencias" name="preferencias" placeholder="Ej. entregar por la puerta trasera antes de las 7:00"></textarea>
+        <button (click)="actualizar({ preferencias: preferencias })" class="btn-verde btn-chico mt-2">Guardar preferencias</button>
+      </div>
+
+      @if (c.latitud != null && c.longitud != null) {
+        <div class="tarjeta"><h2 class="titulo-seccion mb-3">Ubicación guardada</h2><app-mapa-selector [latitud]="c.latitud" [longitud]="c.longitud" [soloLectura]="true" alto="h-48" /></div>
+      }
+
+      <div class="tarjeta overflow-x-auto">
+        <h2 class="titulo-seccion">Historial de compras · {{ c.programaciones_activas }} programación(es) activa(s)</h2>
+        <table class="tabla mt-3"><thead><tr><th>Pedido</th><th>Fecha</th><th>Estado</th><th class="text-right">Total</th></tr></thead>
+          <tbody>@for (p of c.historial; track p.id_pedido) {<tr><td>{{ folio(p.id_pedido) }}</td><td class="text-xs">{{ p.fecha_pedido }}</td><td><span class="chip {{ colorEstado[p.estado] }}">{{ nombreEstado[p.estado] }}</span></td><td class="text-right">{{ p.total | currency:'MXN':'symbol-narrow':'1.2-2' }}</td></tr>}
+            @empty {<tr><td colspan="4" class="text-center opacity-60">Sin pedidos</td></tr>}</tbody></table>
+      </div>
+    </div>
+  } @else { <div class="tarjeta text-center opacity-70">Elige un cliente para ver su ficha</div> }
+</section>

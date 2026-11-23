@@ -30,6 +30,9 @@
                   <div class="min-w-0">
                     <h2 class="text-sm lg:text-base font-extrabold text-cacao truncate">{{ item.producto.nombre }}</h2>
                     <p class="text-xs text-cacao/65">{{ item.producto.unidad }} · ${{ item.producto.precio }} MXN c/u</p>
+                    @if (item.opcionesTexto) {
+                      <p class="text-[11px] text-cacao/70 font-semibold truncate mt-0.5">Con {{ item.opcionesTexto }}</p>
+                    }
                     @if (item.notaEspecial) {
                       <p class="text-[11px] text-milpa font-semibold truncate mt-0.5">Nota: {{ item.notaEspecial }}</p>
                     }
@@ -67,10 +70,19 @@
                 <span>Subtotal</span>
                 <span class="font-bold">${{ carritoService.subtotal() }} MXN</span>
               </div>
+              @if (carritoService.descuento() > 0) {
+                <div class="flex justify-between text-xs lg:text-sm text-green-700">
+                  <span>{{ carritoService.motivoDescuento() }}</span>
+                  <span class="font-bold">−${{ carritoService.descuento() }} MXN</span>
+                </div>
+              }
               <div class="flex justify-between text-xs lg:text-sm text-cacao/80">
-                <span>Envío estimado</span>
-                <span class="font-bold">${{ carritoService.envio() }} MXN</span>
+                <span>Envío a domicilio</span>
+                <span class="font-bold">{{ carritoService.envio() > 0 ? '$' + carritoService.envio() + ' MXN' : 'Gratis' }}</span>
               </div>
+              @if (carritoService.avisoServidor(); as aviso) {
+                <p class="rounded-2xl bg-red-50 border border-red-200 px-3 py-2 text-xs text-red-700">{{ aviso }}</p>
+              }
               <div class="pt-3 border-t border-cacao/10 flex justify-between items-center">
                 <span class="text-base font-extrabold text-cacao">Total</span>
                 <span class="text-xl lg:text-2xl font-black text-cacao">${{ carritoService.total() }} MXN</span>
@@ -79,7 +91,8 @@
               <button
                 type="button"
                 (click)="continuarEntrega()"
-                class="w-full mt-4 py-3.5 lg:py-4 rounded-full bg-milpa text-white font-bold text-sm lg:text-base shadow-md hover:bg-milpa/90 transition cursor-pointer"
+                [disabled]="!carritoService.puedeConfirmar()"
+                class="disabled:opacity-50 disabled:cursor-not-allowed w-full mt-4 py-3.5 lg:py-4 rounded-full bg-milpa text-white font-bold text-sm lg:text-base shadow-md hover:bg-milpa/90 transition cursor-pointer"
               >
                 Continuar a entrega
               </button>

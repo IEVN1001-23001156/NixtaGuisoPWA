@@ -32,6 +32,22 @@ def leer_productos(datos):
 
     cantidades = {}
     for item in productos:
+        # "Arma tu Comida Completa": tortilla + guisado + salsa + agua con 10 % de descuento.
+        # Cada componente se guarda como renglón propio, marcado con ('arma', id_producto).
+        if isinstance(item, dict) and item.get('arma'):
+            arma = item.get('arma') or {}
+            try:
+                cantidad = float(item.get('cantidad'))
+                ids = [(int(arma[k]), k) for k in ('tortilla', 'guisado', 'salsa', 'agua')]
+            except (TypeError, ValueError, KeyError):
+                raise ErrorPedido('Elige tortilla, guisado, salsa y agua para armar tu paquete')
+            if cantidad <= 0 or cantidad != int(cantidad):
+                raise ErrorPedido('La cantidad de paquetes debe ser un número entero')
+            for id_componente, lugar in ids:
+                clave = ('arma', id_componente, lugar)
+                cantidades[clave] = cantidades.get(clave, 0) + cantidad
+            continue
+
         try:
             id_producto = int(item.get('id_producto'))
             cantidad = float(item.get('cantidad'))
@@ -41,9 +57,54 @@ def leer_productos(datos):
         if cantidad <= 0:
             raise ErrorPedido('Las cantidades deben ser mayores a cero')
 
-        cantidades[id_producto] = cantidades.get(id_producto, 0) + cantidad
+        # Un paquete con salsa o agua elegidas se guarda como (paquete, salsa, agua);
+        # así el mismo paquete con distintas opciones queda en renglones separados.
+        salsa, agua = item.get('salsa'), item.get('agua')
+        if salsa or agua:
+            try:
+                clave = (id_producto, int(salsa) if salsa else None, int(agua) if agua else None)
+            except (TypeError, ValueError):
+                raise ErrorPedido('La salsa o el agua elegidas no son válidas')
+        else:
+            clave = id_producto
+
+        cantidades[clave] = cantidades.get(clave, 0) + cantidad
 
     return cantidades
+
+
+def componentes_paquete(cursor, id_paquete, salsa=None, agua=None):
+    """
+    Componentes del paquete "Comida Completa" con la salsa y el agua elegidas.
+    Solo se aceptan opciones del mismo precio, para que el precio del paquete no cambie.
+    Regresa ([(id_producto, cantidad), ...], texto de las opciones o None).
+    """
+    cursor.execute("""
+        SELECT pc.id_producto, pc.cantidad, pr.id_categoria, pr.precio_b2c
+        FROM paquete_componentes pc JOIN productos pr ON pr.id_producto = pc.id_producto
+        WHERE pc.id_paquete = %s
+    """, (id_paquete,))
+    componentes = cursor.fetchall()
+    elegidos, textos = [], []
+
+    for comp in componentes:
+        id_final = comp['id_producto']
+        for elegido, categoria, nombre_opcion in ((salsa, 3, 'La salsa'), (agua, 5, 'El agua')):
+            if elegido and comp['id_categoria'] == categoria:
+                cursor.execute(
+                    "SELECT nombre, id_categoria, precio_b2c, disponible FROM productos WHERE id_producto = %s AND activo = TRUE",
+                    (elegido,)
+                )
+                opcion = cursor.fetchone()
+                if not opcion or opcion['id_categoria'] != categoria or opcion['precio_b2c'] != comp['precio_b2c']:
+                    raise ErrorPedido(f'{nombre_opcion} elegida no está disponible para el paquete')
+                if not opcion['disponible']:
+                    raise ErrorPedido(f"{opcion['nombre']} no está disponible por ahora")
+                id_final = elegido
+                textos.append(opcion['nombre'])
+        elegidos.append((id_final, float(comp['cantidad'])))
+
+    return elegidos, (' y '.join(textos) if textos else None)
 
 
 def calcular_pedido(cursor, id_cliente, tipo, nivel, cantidades,
@@ -66,7 +127,13 @@ def calcular_pedido(cursor, id_cliente, tipo, nivel, cantidades,
     subtotal = 0.0
     kg_tortilla = 0.0
 
-    for id_producto, cantidad in cantidades.items():
+    for clave, cantidad in cantidades.items():
+        armado = isinstance(clave, tuple) and clave[0] == 'arma'
+        if armado:
+            id_producto, lugar, salsa, agua = clave[1], clave[2], None, None
+        else:
+            id_producto, salsa, agua = clave if isinstance(clave, tuple) else (clave, None, None)
+        opciones = None
         cursor.execute(
             "SELECT * FROM productos WHERE id_producto = %s AND activo = TRUE" + bloqueo,
             (id_producto,)
@@ -85,18 +152,28 @@ def calcular_pedido(cursor, id_cliente, tipo, nivel, cantidades,
         if es_kg and (cantidad * 2) != int(cantidad * 2):
             raise ErrorPedido(f"{producto['nombre']} se vende por kilo o medio kilo")
 
-        if producto['es_paquete']:
+        if armado:
+            # Componente de "Arma tu Comida Completa": tortilla de 1 kg, guisado, salsa o agua
+            if tipo == 'B2B':
+                raise ErrorPedido('Los paquetes son exclusivos para cuentas Hogar')
+            categoria_lugar = {'tortilla': 1, 'guisado': 2, 'salsa': 3, 'agua': 5}[lugar]
+            permitido = producto['id_categoria'] == categoria_lugar and (lugar != 'tortilla' or es_kg)
+            if producto['es_paquete'] or not permitido:
+                raise ErrorPedido(f"{producto['nombre']} no se puede incluir en el paquete")
+            precio = round(float(producto['precio_b2c']) * 0.9, 2)
+            requeridos[id_producto] = requeridos.get(id_producto, 0) + cantidad
+            opciones = '|Arma tu Comida Completa'
+        elif producto['es_paquete']:
             if tipo == 'B2B':
                 raise ErrorPedido('Los paquetes son exclusivos para cuentas Hogar')
             precio = float(producto['precio_b2c'])
 
-            cursor.execute(
-                "SELECT id_producto, cantidad FROM paquete_componentes WHERE id_paquete = %s",
-                (id_producto,)
-            )
-            for componente in cursor.fetchall():
-                requerido = float(componente['cantidad']) * cantidad
-                requeridos[componente['id_producto']] = requeridos.get(componente['id_producto'], 0) + requerido
+            componentes, texto_opciones = componentes_paquete(cursor, id_producto, salsa, agua)
+            for id_componente, cantidad_componente in componentes:
+                requeridos[id_componente] = requeridos.get(id_componente, 0) + cantidad_componente * cantidad
+            if salsa or agua:
+                opciones = f"{salsa or ''},{agua or ''}|{texto_opciones or ''}"
+
         else:
             precio = precio_para(producto, tipo, nivel)
             requeridos[id_producto] = requeridos.get(id_producto, 0) + cantidad
@@ -108,8 +185,11 @@ def calcular_pedido(cursor, id_cliente, tipo, nivel, cantidades,
 
         lineas.append({
             'id_producto': id_producto,
-            'nombre': producto['nombre'],
+            'nombre': producto['nombre'] + (f" ({opciones.split('|')[1]})" if opciones else ''),
             'presentacion': producto['presentacion'],
+            'opciones': opciones,
+            'salsa': salsa,
+            'agua': agua,
             'cantidad': cantidad,
             'precio_unitario': precio,
             'subtotal': importe,
@@ -261,10 +341,10 @@ def insertar_pedido(cursor, id_cliente, id_usuario, calculo, modalidad, direccio
     # El precio se copia tal cual se cobró
     for linea in calculo['lineas']:
         cursor.execute("""
-            INSERT INTO detalle_pedido (id_pedido, id_producto, cantidad, precio_unitario, subtotal)
-            VALUES (%s, %s, %s, %s, %s)
+            INSERT INTO detalle_pedido (id_pedido, id_producto, cantidad, precio_unitario, subtotal, opciones)
+            VALUES (%s, %s, %s, %s, %s, %s)
         """, (id_pedido, linea['id_producto'], linea['cantidad'],
-              linea['precio_unitario'], linea['subtotal']))
+              linea['precio_unitario'], linea['subtotal'], linea.get('opciones')))
 
     descontar_inventario(cursor, calculo['requeridos'])
 
@@ -284,7 +364,7 @@ def insertar_pedido(cursor, id_cliente, id_usuario, calculo, modalidad, direccio
 def reponer_inventario(cursor, id_pedido):
     """Regresa al inventario lo que se había descontado (al cancelar)."""
     cursor.execute("""
-        SELECT d.id_producto, d.cantidad, p.es_paquete
+        SELECT d.id_producto, d.cantidad, d.opciones, p.es_paquete
         FROM detalle_pedido d
         JOIN productos p ON p.id_producto = d.id_producto
         WHERE d.id_pedido = %s
@@ -292,14 +372,19 @@ def reponer_inventario(cursor, id_pedido):
 
     for linea in cursor.fetchall():
         if linea['es_paquete']:
-            cursor.execute(
-                "SELECT id_producto, cantidad FROM paquete_componentes WHERE id_paquete = %s",
-                (linea['id_producto'],)
-            )
-            for componente in cursor.fetchall():
+            salsa = agua = None
+            if linea['opciones']:
+                ids = linea['opciones'].split('|')[0].split(',')
+                salsa = int(ids[0]) if ids[0] else None
+                agua = int(ids[1]) if len(ids) > 1 and ids[1] else None
+            try:
+                componentes, _ = componentes_paquete(cursor, linea['id_producto'], salsa, agua)
+            except ErrorPedido:
+                componentes, _ = componentes_paquete(cursor, linea['id_producto'])
+            for id_componente, cantidad_componente in componentes:
                 cursor.execute(
                     "UPDATE productos SET existencia = existencia + %s WHERE id_producto = %s",
-                    (float(componente['cantidad']) * float(linea['cantidad']), componente['id_producto'])
+                    (cantidad_componente * float(linea['cantidad']), id_componente)
                 )
         else:
             cursor.execute(

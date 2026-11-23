@@ -1,12 +1,12 @@
 <div class="min-h-screen bg-crema pb-24">
   <app-barra-superior (abrirMenu)="menuAbierto = true" />
 
-  <div class="max-w-5xl mx-auto px-5 lg:px-6 pt-6 lg:pt-8">
+  <div class="max-w-5xl mx-auto px-4 sm:px-5 lg:px-6 pt-6 lg:pt-8">
     <header class="bg-maiz px-5 pt-6 pb-7 rounded-t-[2rem] shadow-sm flex items-center justify-between gap-3">
-      <div class="flex items-center gap-3">
+      <div class="flex items-center gap-3 min-w-0">
         <a
           routerLink="/admin/panel"
-          class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-white text-maiz shadow-sm hover:scale-105 transition"
+          class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-white text-maiz shadow-sm hover:scale-105 transition shrink-0"
           aria-label="Volver al panel operativo"
         >
           <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
@@ -14,7 +14,7 @@
           </svg>
         </a>
 
-        <h1 class="text-xl lg:text-3xl font-extrabold text-cacao">
+        <h1 class="text-xl lg:text-3xl font-extrabold text-cacao truncate">
           {{ pestana === 'stock' ? 'Inventario de Productos' : 'Registro de Mermas' }}
         </h1>
       </div>
@@ -22,18 +22,18 @@
       <button
         type="button"
         (click)="cargarProductosDesdeBd()"
-        class="px-4 py-2 rounded-full bg-white text-cacao text-xs font-extrabold shadow-xs hover:bg-crema transition cursor-pointer"
+        class="px-4 py-2 rounded-full bg-white text-cacao text-xs font-extrabold shadow-xs hover:bg-crema transition cursor-pointer whitespace-nowrap shrink-0"
       >
-        Recargar 
+        Recargar
       </button>
     </header>
 
-    <main class="px-5 lg:px-8 pt-6 bg-white rounded-b-[2rem] pb-8 shadow-xl border border-cacao/10 space-y-5">
-      <div class="flex items-center gap-3">
+    <main class="px-4 sm:px-5 lg:px-8 pt-6 bg-white rounded-b-[2rem] pb-8 shadow-xl border border-cacao/10 space-y-5">
+      <div class="flex flex-wrap items-center gap-3">
         <button
           type="button"
           (click)="pestana = 'stock'"
-          class="px-5 py-2.5 rounded-full text-xs lg:text-sm font-extrabold transition cursor-pointer"
+          class="px-5 py-2.5 rounded-full text-xs lg:text-sm font-extrabold transition cursor-pointer whitespace-nowrap"
           [class.bg-milpa]="pestana === 'stock'"
           [class.text-white]="pestana === 'stock'"
           [class.bg-crema]="pestana !== 'stock'"
@@ -45,7 +45,7 @@
         <button
           type="button"
           (click)="pestana = 'mermas'"
-          class="px-5 py-2.5 rounded-full text-xs lg:text-sm font-extrabold transition cursor-pointer"
+          class="px-5 py-2.5 rounded-full text-xs lg:text-sm font-extrabold transition cursor-pointer whitespace-nowrap"
           [class.bg-milpa]="pestana === 'mermas'"
           [class.text-white]="pestana === 'mermas'"
           [class.bg-crema]="pestana !== 'mermas'"
@@ -85,53 +85,57 @@
           <div class="space-y-4">
             @for (item of productos(); track item.id) {
               <div
-                class="p-5 rounded-2xl bg-crema border-l-4 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-4"
+                class="p-4 sm:p-5 rounded-2xl bg-crema border-l-4 shadow-2xs flex flex-col lg:flex-row lg:items-center justify-between gap-4"
                 [class.border-milpa]="item.optimo"
                 [class.border-maiz]="!item.optimo"
               >
-                <div>
-                  <span class="text-[11px] font-bold uppercase text-milpa">{{ item.categoria }}</span>
+                <div class="min-w-0 space-y-0.5">
+                  <span class="text-[11px] font-bold uppercase tracking-wide text-milpa">{{ item.categoria }}</span>
                   <p class="text-sm lg:text-base font-extrabold text-cacao">{{ item.nombre }}</p>
-                  <p class="text-sm font-bold text-cacao/80">
+                  <p class="text-xs sm:text-sm font-bold text-cacao/80">
                     Existencia: {{ item.existencia }} · {{ item.presentacion }}
                   </p>
                 </div>
 
-                <div class="flex flex-wrap items-center gap-2">
-                  <label class="text-xs font-bold text-cacao/75">Existencia:</label>
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.5"
-                    [(ngModel)]="item.existencia"
-                    [name]="'existencia_' + item.id"
-                    class="w-24 px-3 py-1.5 rounded-lg bg-white text-cacao text-xs font-extrabold border border-cacao/15 focus:outline-none"
-                  />
-                  <button
-                    type="button"
-                    (click)="guardarStockDirecto(item)"
-                    class="px-3.5 py-1.5 rounded-full bg-cacao text-crema text-xs font-bold hover:opacity-90 transition cursor-pointer"
-                  >
-                    Guardar stock
-                  </button>
+                <div class="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 shrink-0">
+                  <div class="flex items-center gap-2">
+                    <label class="text-xs font-bold text-cacao/75 whitespace-nowrap">Existencia:</label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.5"
+                      [(ngModel)]="item.existencia"
+                      [name]="'existencia_' + item.id"
+                      class="w-24 px-3 py-1.5 rounded-lg bg-white text-cacao text-xs font-extrabold border border-cacao/15 focus:outline-none"
+                    />
+                    <button
+                      type="button"
+                      (click)="guardarStockDirecto(item)"
+                      class="px-3.5 py-1.5 rounded-full bg-cacao text-crema text-xs font-bold hover:opacity-90 transition cursor-pointer whitespace-nowrap"
+                    >
+                      Guardar stock
+                    </button>
+                  </div>
 
-                  <span class="h-5 w-px bg-cacao/15 mx-1 hidden sm:inline-block"></span>
+                  <span class="h-5 w-px bg-cacao/15 hidden sm:inline-block"></span>
 
-                  <input
-                    type="number"
-                    min="0.5"
-                    step="0.5"
-                    [(ngModel)]="item.cantidadAjuste"
-                    [name]="'delta_' + item.id"
-                    class="w-20 px-3 py-1.5 rounded-lg bg-white text-cacao text-xs font-extrabold border border-cacao/15 focus:outline-none"
-                  />
-                  <button
-                    type="button"
-                    (click)="agregarCantidad(item.id)"
-                    class="px-4 py-1.5 rounded-full bg-milpa text-white text-xs font-extrabold hover:bg-milpa/90 transition cursor-pointer"
-                  >
-                    + Sumar
-                  </button>
+                  <div class="flex items-center gap-2">
+                    <input
+                      type="number"
+                      min="0.5"
+                      step="0.5"
+                      [(ngModel)]="item.cantidadAjuste"
+                      [name]="'delta_' + item.id"
+                      class="w-20 px-3 py-1.5 rounded-lg bg-white text-cacao text-xs font-extrabold border border-cacao/15 focus:outline-none"
+                    />
+                    <button
+                      type="button"
+                      (click)="agregarCantidad(item.id)"
+                      class="px-4 py-1.5 rounded-full bg-milpa text-white text-xs font-extrabold hover:bg-milpa/90 transition cursor-pointer whitespace-nowrap"
+                    >
+                      + Sumar
+                    </button>
+                  </div>
                 </div>
               </div>
             } @empty {
@@ -197,9 +201,9 @@
           <h2 class="text-sm font-extrabold text-cacao">Mermas registradas</h2>
           @for (m of mermasMes(); track m.id) {
             <div class="p-4 rounded-2xl bg-crema border-l-4 border-maiz shadow-2xs">
-              <p class="text-[11px] font-bold text-maiz">{{ m.fecha }}</p>
+              <p class="text-[11px] font-bold text-cacao/70">{{ m.fecha }}</p>
               <p class="text-sm font-extrabold text-cacao mt-0.5">{{ m.producto }}</p>
-              <p class="text-xs text-cacao/75">Cantidad perdida: {{ m.cantidadPerdida }} · {{ m.motivo }}</p>
+              <p class="text-xs text-cacao/80">Cantidad perdida: {{ m.cantidadPerdida }} · {{ m.motivo }}</p>
             </div>
           }
         </div>

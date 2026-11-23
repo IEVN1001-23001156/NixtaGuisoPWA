@@ -1,5 +1,8 @@
 import { Routes } from '@angular/router';
 
+import { adminGuard, clienteGuard } from './guards/acceso.guard';
+import { MarcoAdmin } from './panel/marco-admin/marco-admin';
+
 import { Bienvenida } from './modulos/autenticacion/bienvenida/bienvenida';
 import { InicioSesion } from './modulos/autenticacion/inicio-sesion/inicio-sesion';
 import { Registro } from './modulos/autenticacion/registro/registro';
@@ -21,13 +24,6 @@ import { CalendarioAgendamiento } from './modulos/pedidos-programados/calendario
 import { FormularioEspecial } from './modulos/pedidos-programados/formulario-especial/formulario-especial';
 import { CotizacionesB2b } from './modulos/pedidos-programados/cotizaciones-b2b/cotizaciones-b2b';
 
-import { PanelOperativo } from './modulos/administracion/panel-operativo/panel-operativo';
-import { ListadoMenu } from './modulos/gestion-menu/listado-menu/listado-menu';
-import { FormularioProducto } from './modulos/gestion-menu/formulario-producto/formulario-producto';
-import { ControlInventario } from './modulos/inventario/control-inventario/control-inventario';
-import { DirectorioClientes } from './modulos/crm/directorio-clientes/directorio-clientes';
-import { FichaCliente } from './modulos/crm/ficha-cliente/ficha-cliente';
-import { MapaDespacho } from './modulos/logistica/mapa-despacho/mapa-despacho';
 import { RastreoPedido } from './modulos/logistica/rastreo-pedido/rastreo-pedido';
 
 export const routes: Routes = [
@@ -39,28 +35,44 @@ export const routes: Routes = [
   { path: 'inicio', component: Inicio },
   { path: 'buscador', component: Buscador },
   { path: 'producto/:id', component: DetalleProducto },
+  { path: 'arma-tu-paquete', loadComponent: () => import('./modulos/catalogo/arma-paquete/arma-paquete').then(m => m.ArmaPaquete) },
 
-  { path: 'carrito', component: Carrito },
-  { path: 'checkout/entrega', component: DireccionEntrega },
-  { path: 'checkout/pago', component: MetodoPago },
-  { path: 'checkout/confirmacion', component: Confirmacion },
+  { path: 'carrito', component: Carrito, canActivate: [clienteGuard] },
+  { path: 'checkout/entrega', component: DireccionEntrega, canActivate: [clienteGuard] },
+  { path: 'checkout/pago', component: MetodoPago, canActivate: [clienteGuard] },
+  { path: 'checkout/confirmacion', component: Confirmacion, canActivate: [clienteGuard] },
 
   { path: 'perfil', component: PerfilUsuario },
-  { path: 'historial-pedidos', component: HistorialPedidos },
+  { path: 'historial-pedidos', component: HistorialPedidos, canActivate: [clienteGuard] },
 
-  { path: 'programados', component: CalendarioAgendamiento },
-  { path: 'programados/nuevo', component: FormularioEspecial },
-  { path: 'cotizaciones-b2b', component: CotizacionesB2b },
+  { path: 'programados', component: CalendarioAgendamiento, canActivate: [clienteGuard] },
+  { path: 'programados/nuevo', component: FormularioEspecial, canActivate: [clienteGuard] },
+  { path: 'cotizaciones-b2b', component: CotizacionesB2b, canActivate: [clienteGuard] },
 
-  { path: 'admin/panel', component: PanelOperativo },
-  { path: 'admin/menu', component: ListadoMenu },
-  { path: 'admin/menu/nuevo', component: FormularioProducto },
-  { path: 'admin/menu/editar/:id', component: FormularioProducto },
-  { path: 'admin/inventario', component: ControlInventario },
-  { path: 'admin/crm', component: DirectorioClientes },
-  { path: 'admin/crm/:id', component: FichaCliente },
-  { path: 'admin/logistica', component: MapaDespacho },
-  { path: 'rastreo', component: RastreoPedido },
+  { path: 'rastreo', component: RastreoPedido, canActivate: [clienteGuard] },
+
+  {
+    path: 'admin',
+    component: MarcoAdmin,
+    canActivate: [adminGuard],
+    children: [
+      { path: '', redirectTo: 'panel', pathMatch: 'full' },
+      { path: 'panel', loadComponent: () => import('./panel/paginas/admin/panel/panel').then(m => m.Panel) },
+      { path: 'menu', loadComponent: () => import('./panel/paginas/admin/menu/menu').then(m => m.MenuAdmin) },
+      { path: 'inventario', loadComponent: () => import('./panel/paginas/admin/inventario/inventario').then(m => m.Inventario) },
+      { path: 'crm', loadComponent: () => import('./panel/paginas/admin/crm/crm').then(m => m.CrmAdmin) },
+      { path: 'logistica', loadComponent: () => import('./panel/paginas/admin/logistica/logistica').then(m => m.LogisticaAdmin) },
+      { path: 'reportes', loadComponent: () => import('./panel/paginas/admin/reportes/reportes').then(m => m.Reportes) },
+      { path: 'indicadores', redirectTo: 'panel' },
+      { path: 'pedidos', redirectTo: 'logistica' },
+      { path: 'rutas', redirectTo: 'logistica' },
+      { path: 'repartidores', redirectTo: 'logistica' },
+      { path: 'produccion', redirectTo: 'inventario' },
+      { path: 'menu/nuevo', redirectTo: 'menu' },
+      { path: 'menu/editar/:id', redirectTo: 'menu' },
+      { path: 'crm/:id', redirectTo: 'crm' }
+    ]
+  },
 
   { path: '**', redirectTo: '' }
 ];

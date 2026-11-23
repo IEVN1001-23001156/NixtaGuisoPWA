@@ -1,0 +1,64 @@
+<div class="flex flex-wrap items-end justify-between gap-3">
+  <div><h1 class="text-2xl lg:text-3xl font-extrabold">Mapa de rutas</h1><p class="text-sm opacity-70">Elige una fecha para planear el día o consultar rutas guardadas</p></div>
+  <input type="date" class="campo-gris w-auto" [(ngModel)]="fecha" (change)="cargar()" name="fecha" aria-label="Fecha">
+</div>
+
+@if (corrigiendo(); as c) {
+  <div class="mt-3 rounded-2xl bg-nixta-amarillo px-4 py-3 text-sm font-semibold flex items-center justify-between gap-3">
+    <span>Toca el mapa para fijar la ubicación del pedido #{{ c.id_pedido }} ({{ c.cliente }})</span>
+    <button (click)="corrigiendo.set(null)" class="btn-borde btn-chico">Cancelar</button>
+  </div>
+}
+@if (sinUbicacion() > 0) { <p class="mt-3 text-sm caja-error">{{ sinUbicacion() }} pedido(s) sin ubicación: usa "Fijar en el mapa".</p> }
+
+<section class="mt-4 grid gap-5 xl:grid-cols-[1fr_420px]">
+  <div class="h-[420px] xl:h-[calc(100vh-180px)] xl:sticky xl:top-6">
+    <app-mapa-rutas [rutas]="rutas()" [sinAsignar]="sinAsignar()" (clicMapa)="clicEnMapa($event)" />
+  </div>
+
+  <div class="space-y-4">
+    @for (ruta of rutas(); track ruta.id_repartidor; let i = $index) {
+      <div class="tarjeta p-4">
+        <div class="flex items-center gap-2">
+          <span class="w-4 h-4 rounded-full" [style.background]="colores[i % colores.length]"></span>
+          <h2 class="font-extrabold flex-1">{{ ruta.repartidor }} <span class="text-xs font-normal opacity-60">{{ ruta.placas }}</span></h2>
+          <span class="chip bg-nixta-crema">{{ ruta.entregadas }}/{{ ruta.total_paradas }} entregadas</span>
+        </div>
+        <ol class="mt-3 space-y-2">
+          @for (p of ruta.paradas; track p.id_pedido; let j = $index; let primero = $first; let ultimo = $last) {
+            <li class="flex items-center gap-2 rounded-2xl bg-nixta-crema px-3 py-2" [class.opacity-50]="p.estado === 'entregado'">
+              <span class="w-7 h-7 rounded-full text-white text-xs font-bold grid place-items-center shrink-0" [style.background]="colores[i % colores.length]">{{ p.orden_ruta }}</span>
+              <div class="flex-1 min-w-0 text-sm"><p class="font-semibold truncate">#{{ p.id_pedido }} · {{ p.cliente }}</p><p class="text-xs opacity-70 truncate">{{ nombreEstado[p.estado] }} · {{ p.direccion_entrega }}</p></div>
+              @if (p.latitud == null) { <button (click)="corrigiendo.set(p)" class="chip bg-nixta-amarillo">Fijar</button> }
+              @else { <button (click)="corrigiendo.set(p)" class="opacity-50 hover:opacity-100" aria-label="Corregir ubicación"><span class="material-symbols-rounded text-lg">edit_location_alt</span></button> }
+              <div class="flex flex-col">
+                <button (click)="mover(ruta, j, -1)" [disabled]="primero" class="disabled:opacity-20" aria-label="Subir"><span class="material-symbols-rounded text-lg leading-none">keyboard_arrow_up</span></button>
+                <button (click)="mover(ruta, j, 1)" [disabled]="ultimo" class="disabled:opacity-20" aria-label="Bajar"><span class="material-symbols-rounded text-lg leading-none">keyboard_arrow_down</span></button>
+              </div>
+            </li>
+          }
+        </ol>
+        @if (cambiosSinGuardar().has(ruta.id_repartidor)) {
+          <button (click)="guardar(ruta)" class="btn-verde w-full mt-3">Guardar orden de la ruta</button>
+        }
+      </div>
+    }
+
+    <div class="tarjeta p-4">
+      <h2 class="font-extrabold">Sin repartidor ({{ sinAsignar().length }})</h2>
+      <ul class="mt-3 space-y-2">
+        @for (p of sinAsignar(); track p.id_pedido) {
+          <li class="rounded-2xl bg-nixta-crema px-3 py-2 text-sm">
+            <div class="flex items-center gap-2"><p class="flex-1 font-semibold truncate">#{{ p.id_pedido }} · {{ p.cliente }}</p>
+              <button (click)="corrigiendo.set(p)" class="chip" [class]="p.latitud == null ? 'chip bg-nixta-amarillo' : 'chip bg-white'">{{ p.latitud == null ? 'Fijar en el mapa' : 'Corregir' }}</button></div>
+            <p class="text-xs opacity-70 truncate">{{ nombreEstado[p.estado] }} · {{ p.direccion_entrega }}</p>
+            <div class="mt-2 flex gap-2">
+              <select class="campo-gris py-1.5" [(ngModel)]="asignaciones[p.id_pedido]" [name]="'r' + p.id_pedido"><option [ngValue]="undefined" disabled>Repartidor…</option>@for (r of repartidores(); track r.id_repartidor) {<option [ngValue]="r.id_repartidor">{{ r.nombre }}</option>}</select>
+              <button (click)="asignar(p)" class="btn-naranja btn-chico shrink-0" [disabled]="!asignaciones[p.id_pedido]">Asignar</button>
+            </div>
+          </li>
+        } @empty { <li class="text-sm opacity-60">Todos los pedidos a domicilio tienen repartidor</li> }
+      </ul>
+    </div>
+  </div>
+</section>

@@ -12,7 +12,7 @@
         </svg>
       </button>
 
-      <a routerLink="/inicio" class="shrink-0">
+      <a [routerLink]="esAdmin() ? '/admin/panel' : '/inicio'" class="shrink-0">
         <img
           src="/Logotipo.png"
           alt="NixtaGuiso"

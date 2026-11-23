@@ -157,9 +157,13 @@
 
             <div class="flex items-center justify-between pt-4 mt-4 border-t border-cacao/10">
               <span class="text-lg lg:text-xl font-black text-cacao">${{ item.precio }} MXN</span>
-              <span class="px-3.5 py-1.5 rounded-full bg-cacao text-crema text-xs font-bold group-hover:bg-salsa transition-colors">
-                Ver detalle
-              </span>
+              @if (item.agotado) {
+                <span class="px-3.5 py-1.5 rounded-full bg-gray-300 text-cacao text-xs font-bold">Agotado</span>
+              } @else {
+                <span class="px-3.5 py-1.5 rounded-full bg-cacao text-crema text-xs font-bold group-hover:bg-salsa transition-colors">
+                  Ver detalle
+                </span>
+              }
             </div>
           </a>
         }

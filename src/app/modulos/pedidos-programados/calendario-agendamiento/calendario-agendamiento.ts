@@ -150,8 +150,8 @@ export class CalendarioAgendamiento implements OnInit {
 
       this.mensajeEstado.set('Entrega programada registrada.');
       await this.cargarDatos();
-    } catch {
-      this.errorMensaje.set('No se pudo conectar con el servidor.');
+    } catch (e: any) {
+      this.errorMensaje.set(e?.status ? (e?.error?.mensaje || 'No se pudo guardar la solicitud.') : 'No se pudo conectar con el servidor.');
     } finally {
       this.guardando.set(false);
     }

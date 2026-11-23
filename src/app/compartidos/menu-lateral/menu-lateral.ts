@@ -1,7 +1,6 @@
 import { Component, computed, EventEmitter, inject, Input, Output } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { AuthRolService } from '../../servicios/auth-rol.service';
-import { CarritoService } from '../../servicios/carrito.service';
 
 @Component({
   imports: [RouterLink],
@@ -12,7 +11,6 @@ import { CarritoService } from '../../servicios/carrito.service';
 export class MenuLateral {
   private readonly router = inject(Router);
   private readonly authRol = inject(AuthRolService);
-  private readonly carritoService = inject(CarritoService);
 
   @Input() abierto = false;
   @Output() cerrar = new EventEmitter<void>();
@@ -27,8 +25,7 @@ export class MenuLateral {
 
   async cerrarSesion(): Promise<void> {
     await this.authRol.cerrarSesion();
-    this.carritoService.vaciar();
     this.cerrar.emit();
-    await this.router.navigate(['/login']);
+    await this.router.navigate(['/iniciar-sesion']);
   }
 }

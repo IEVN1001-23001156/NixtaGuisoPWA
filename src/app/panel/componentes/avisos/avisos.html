@@ -1,0 +1,16 @@
+<div class="fixed z-50 inset-x-0 top-4 flex flex-col items-center gap-2 px-4 pointer-events-none" aria-live="polite">
+  @for (aviso of servicio.avisos(); track aviso.id) {
+    <div class="pointer-events-auto max-w-sm w-full rounded-2xl shadow-lg px-4 py-3 flex items-center gap-3 text-sm font-semibold"
+         [class.bg-nixta-verde]="aviso.tipo === 'exito'" [class.text-white]="aviso.tipo !== 'info'"
+         [class.bg-red-600]="aviso.tipo === 'error'"
+         [class.bg-nixta-amarillo]="aviso.tipo === 'info'" [class.text-nixta-cafe]="aviso.tipo === 'info'">
+      <span class="material-symbols-rounded">
+        {{ aviso.tipo === 'exito' ? 'check_circle' : aviso.tipo === 'error' ? 'error' : 'info' }}
+      </span>
+      <span class="flex-1">{{ aviso.texto }}</span>
+      <button (click)="servicio.cerrar(aviso.id)" aria-label="Cerrar aviso" class="opacity-80 hover:opacity-100">
+        <span class="material-symbols-rounded text-lg">close</span>
+      </button>
+    </div>
+  }
+</div>

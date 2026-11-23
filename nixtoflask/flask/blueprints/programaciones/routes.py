@@ -3,7 +3,7 @@ from datetime import date, datetime, timedelta
 from flask import Blueprint, request, jsonify, session
 
 from database import mysql
-from utils.seguridad import cliente_requerido
+from utils.seguridad import cliente_requerido, login_requerido
 from utils.precios import obtener_tipo_cliente, precio_para
 from utils.pedidos import ErrorPedido, leer_productos, calcular_pedido
 
@@ -117,12 +117,47 @@ def obtener_programacion_propia(cursor, id_programacion):
 # ---------------------------------------------------------------------
 
 @programaciones_bp.route('/api/programaciones', methods=['GET'])
-@cliente_requerido
+@login_requerido
 def listar_programaciones():
     cursor = None
 
     try:
         cursor = mysql.connection.cursor()
+
+        # El administrador (Panel Operativo) ve las programaciones activas de todos
+        if session.get('rol') == 'admin':
+            cursor.execute("""
+                SELECT pg.*, COALESCE(c.nombre_negocio, u.nombre) AS cliente, u.telefono, c.tipo AS tipo_cliente
+                FROM programaciones pg
+                JOIN clientes c ON c.id_cliente = pg.id_cliente
+                JOIN usuarios u ON u.id_usuario = c.id_usuario
+                WHERE pg.estado = 'activa'
+                ORDER BY pg.fecha_inicio
+            """)
+            programaciones = []
+            for f in cursor.fetchall():
+                cursor.execute("""
+                    SELECT pr.nombre, pr.presentacion, dp.cantidad FROM detalle_programacion dp
+                    JOIN productos pr ON pr.id_producto = dp.id_producto WHERE dp.id_programacion = %s
+                """, (f['id_programacion'],))
+                productos = [{'nombre': x['nombre'], 'presentacion': x['presentacion'], 'cantidad': float(x['cantidad'])}
+                             for x in cursor.fetchall()]
+                programaciones.append({
+                    'id_programacion': f['id_programacion'], 'tipo': f['tipo'], 'frecuencia': f['frecuencia'],
+                    'fecha_inicio': f['fecha_inicio'].isoformat(), 'estado': f['estado'], 'cliente': f['cliente'],
+                    'tipo_cliente': f['tipo_cliente'], 'telefono': f['telefono'],
+                    'proxima_entrega': proxima_entrega(f),
+                    'hora_desde': formato_hora(f['hora_desde']), 'hora_hasta': formato_hora(f['hora_hasta']),
+                    'direccion_entrega': f['direccion_entrega'], 'notas': f['notas'],
+                    'productos': productos,
+                    'resumen': ', '.join(f"{x['cantidad']:g} {x['nombre']}" for x in productos)
+                })
+            programaciones.sort(key=lambda x: x['proxima_entrega'] or '9999')
+            return jsonify({'exito': True, 'programaciones': programaciones}), 200
+
+        if session.get('rol') != 'cliente':
+            return jsonify({'exito': False, 'mensaje': 'Esta función es solo para clientes'}), 403
+
         tipo, nivel = obtener_tipo_cliente(cursor)
 
         cursor.execute("""
@@ -171,7 +206,12 @@ def listar_programaciones():
                 'estado': prog['estado'],
                 'proxima_entrega': proxima_entrega(prog),
                 'subtotal_estimado': round(subtotal, 2),
-                'productos': productos
+                'productos': productos,
+                # Campos que usan las pantallas de programados
+                'fecha_programada': proxima_entrega(prog) or prog['fecha_inicio'].isoformat(),
+                'hora_entrega': formato_hora(prog['hora_desde']),
+                'total_estimado': round(subtotal, 2),
+                'resumen': ', '.join(f"{x['cantidad']:g} {x['nombre']}" for x in productos)
             })
 
         return jsonify({'exito': True, 'programaciones': resultado}), 200
@@ -189,16 +229,47 @@ def listar_programaciones():
 #  CREAR PROGRAMACION
 # ---------------------------------------------------------------------
 
+def adaptar_programacion_pantallas(datos):
+    """
+    Las pantallas (calendario, pedido especial y cotización B2B) envían
+    fecha_programada, hora_entrega e items; aquí se convierten al formato del backend.
+    La ventana de entrega es de una hora a partir de la hora elegida.
+    """
+    if 'fecha_programada' not in datos and 'items' not in datos:
+        return datos
+    hora = str(datos.get('hora_entrega') or '09:00')[:5]
+    try:
+        h, m = (int(x) for x in hora.split(':'))
+        hasta = f"{min(h + 1, 23):02d}:{m if h < 23 else 59:02d}"
+    except ValueError:
+        hora, hasta = '09:00', '10:00'
+    notas = str(datos.get('notas') or '').strip()
+    if datos.get('nombre_negocio'):
+        notas = f"Evento o negocio: {str(datos['nombre_negocio']).strip()}. {notas}".strip()
+    return {
+        'tipo': 'automatico',   # negocio si la cuenta es B2B; evento si es Hogar
+        'frecuencia': 'semanal' if datos.get('frecuencia') == 'semanal' else 'unica',
+        'fecha_inicio': datos.get('fecha_programada'),
+        'hora_desde': hora,
+        'hora_hasta': hasta,
+        'direccion_entrega': datos.get('direccion_entrega', ''),
+        'notas': notas[:500],
+        'productos': [{'id_producto': i.get('id_producto'), 'cantidad': i.get('cantidad')} for i in (datos.get('items') or [])]
+    }
+
+
 @programaciones_bp.route('/api/programaciones', methods=['POST'])
 @cliente_requerido
 def crear_programacion():
     cursor = None
 
     try:
-        datos = request.get_json(silent=True) or {}
+        datos = adaptar_programacion_pantallas(request.get_json(silent=True) or {})
 
         cursor = mysql.connection.cursor()
         tipo, nivel = obtener_tipo_cliente(cursor)
+        if datos.get('tipo') == 'automatico':
+            datos['tipo'] = 'negocio' if tipo == 'B2B' else 'evento'
         prog = leer_datos_programacion(cursor, datos, tipo, nivel)
 
         cursor.execute("""

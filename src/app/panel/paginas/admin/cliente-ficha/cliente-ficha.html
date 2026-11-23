@@ -1,0 +1,56 @@
+<a routerLink="/admin/crm" class="text-sm font-semibold inline-flex items-center gap-1"><span class="material-symbols-rounded">arrow_back</span> Clientes</a>
+
+@if (cliente(); as c) {
+  <section class="mt-3 grid gap-5 lg:grid-cols-[360px_1fr] lg:items-start">
+    <div class="rounded-3xl bg-nixta-naranja p-6 shadow-md text-center">
+      <span class="mx-auto w-20 h-20 rounded-full bg-nixta-crema grid place-items-center text-3xl font-extrabold">{{ (c.nombre_negocio || c.nombre).charAt(0) }}</span>
+      <span class="mt-3 chip bg-nixta-verde text-white">{{ c.tipo === 'B2B' ? 'Negocio B2B' : 'Hogar B2C' }}</span>
+      <dl class="mt-4 space-y-2 text-sm">
+        @if (c.nombre_negocio) { <div><dt class="font-bold">Negocio</dt><dd>{{ c.nombre_negocio }}</dd></div> }
+        <div><dt class="font-bold">Contacto</dt><dd>{{ c.nombre }}</dd></div>
+        <div><dt class="font-bold">Correo</dt><dd>{{ c.correo }}</dd></div>
+        <div><dt class="font-bold">Teléfono</dt><dd>{{ c.telefono }}</dd></div>
+        <div><dt class="font-bold">Dirección</dt><dd>{{ c.direccion || '—' }}</dd></div>
+        @if (c.tipo === 'B2B') { <div><dt class="font-bold">RFC</dt><dd>{{ c.rfc || '—' }}</dd></div> }
+        <div><dt class="font-bold">Registrado</dt><dd>{{ c.fecha_registro }} @if (c.referido_por) {· invitado por {{ c.referido_por }}}</dd></div>
+      </dl>
+      <div class="mt-4 grid grid-cols-3 gap-2 text-xs">
+        <div class="rounded-2xl bg-white/70 p-2"><p class="font-extrabold text-base">{{ c.saldo_favor | currency:'MXN':'symbol-narrow':'1.0-0' }}</p>Saldo</div>
+        <div class="rounded-2xl bg-white/70 p-2"><p class="font-extrabold text-base">{{ c.invitados }}</p>Invitados</div>
+        <div class="rounded-2xl bg-white/70 p-2"><p class="font-extrabold text-base">{{ c.calificacion_promedio ?? '—' }}</p>CSAT</div>
+      </div>
+    </div>
+
+    <div class="space-y-5">
+      <div class="tarjeta grid gap-4 sm:grid-cols-2">
+        @if (c.tipo === 'B2B') {
+          <div><span class="etiqueta">Nivel de precio B2B</span>
+            <div class="flex gap-2">
+              @for (n of [1, 2]; track n) {
+                <button (click)="actualizar({ nivel_b2b: n })" class="btn btn-chico flex-1" [class]="c.nivel_b2b === n ? 'bg-nixta-verde text-white' : 'bg-nixta-crema'">Nivel {{ n }} ({{ n === 1 ? '−10 %' : '−15 %' }})</button>
+              }
+            </div>
+            <p class="text-xs opacity-60 mt-1">Nivel 2: 15 kg diarios o más, o suscripción semanal.</p>
+          </div>
+        }
+        <div><span class="etiqueta">Estado de la cuenta</span>
+          <button (click)="actualizar({ activo: !c.activo })" class="btn btn-chico w-full" [class]="c.activo ? 'bg-red-100 text-red-700' : 'bg-nixta-verde text-white'">{{ c.activo ? 'Desactivar cuenta' : 'Activar cuenta' }}</button>
+        </div>
+        <label class="sm:col-span-2"><span class="etiqueta">Preferencias especiales</span>
+          <textarea rows="2" class="campo-gris" [(ngModel)]="preferencias" name="preferencias" placeholder="Ej. entregar por la puerta trasera antes de las 7:00"></textarea></label>
+        <button (click)="actualizar({ preferencias: preferencias })" class="btn-verde sm:col-span-2">Guardar preferencias</button>
+      </div>
+
+      @if (c.latitud != null && c.longitud != null) {
+        <div class="tarjeta"><h2 class="titulo-seccion mb-3">Ubicación guardada</h2><app-mapa-selector [latitud]="c.latitud" [longitud]="c.longitud" [soloLectura]="true" alto="h-48" /></div>
+      }
+
+      <div class="tarjeta overflow-x-auto">
+        <h2 class="titulo-seccion mb-3">Historial de pedidos · {{ c.programaciones_activas }} programación(es) activa(s)</h2>
+        <table class="tabla"><thead><tr><th>#</th><th>Fecha</th><th>Estado</th><th class="text-right">Total</th></tr></thead>
+          <tbody>@for (p of c.historial; track p.id_pedido) {<tr><td>{{ p.id_pedido }}</td><td class="text-xs">{{ p.fecha_pedido }}</td><td><span class="chip {{ colorEstado[p.estado] }}">{{ nombreEstado[p.estado] }}</span></td><td class="text-right">{{ p.total | currency:'MXN':'symbol-narrow':'1.2-2' }}</td></tr>}
+            @empty {<tr><td colspan="4" class="text-center opacity-60">Sin pedidos</td></tr>}</tbody></table>
+      </div>
+    </div>
+  </section>
+}

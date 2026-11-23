@@ -1,4 +1,4 @@
-import { Component, computed, effect, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
@@ -16,7 +16,7 @@ import { FotoPerfilService } from '../../../servicios/foto-perfil.service';
   styleUrl: './perfil-usuario.css',
   templateUrl: './perfil-usuario.html',
 })
-export class PerfilUsuario {
+export class PerfilUsuario implements OnInit {
   private readonly authRol = inject(AuthRolService);
   private readonly carritoService = inject(CarritoService);
   private readonly fotoPerfilService = inject(FotoPerfilService);
@@ -49,6 +49,12 @@ export class PerfilUsuario {
         }
       }
     });
+  }
+
+  async ngOnInit(): Promise<void> {
+    if (!this.authRol.usuario()) {
+      await this.authRol.consultarSesionActual();
+    }
   }
 
   get nombreUsuario(): string {

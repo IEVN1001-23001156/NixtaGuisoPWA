@@ -1,0 +1,56 @@
+<div class="min-h-screen bg-crema pb-28">
+  <app-barra-superior (abrirMenu)="menuAbierto = true" />
+
+  <div class="max-w-3xl mx-auto px-4 lg:px-8 pt-6 lg:pt-10">
+    <a routerLink="/inicio" class="text-sm font-bold text-cacao/70 hover:text-cacao">← Volver al catálogo</a>
+    <h1 class="mt-2 text-2xl lg:text-4xl font-extrabold text-cacao">Arma tu Comida Completa</h1>
+    <p class="mt-1 text-sm text-cacao/70">Elige tu tortilla, tu guisado, tu salsa y tu agua fresca, y ahorra 10 %.</p>
+
+    @if (cargando()) {
+      <p class="mt-8 text-sm text-cacao/70">Cargando productos…</p>
+    } @else {
+      <div class="mt-6 p-5 lg:p-7 rounded-[2rem] bg-white border border-cacao/10 shadow-sm space-y-4">
+        @for (paso of [
+          { titulo: '1. Tortilla (1 kg)', lista: tortillas(), valor: tortilla },
+          { titulo: '2. Guisado (1 L)', lista: guisados(), valor: guisado },
+          { titulo: '3. Salsa (100 ml)', lista: salsas(), valor: salsa },
+          { titulo: '4. Agua fresca (1 L)', lista: aguas(), valor: agua }
+        ]; track paso.titulo) {
+          <div>
+            <label class="block text-xs lg:text-sm font-bold text-cacao mb-2">{{ paso.titulo }}</label>
+            <select [ngModel]="paso.valor()" (ngModelChange)="paso.valor.set($event)"
+                    class="w-full rounded-2xl border border-cacao/15 bg-crema px-4 py-3 text-sm font-semibold text-cacao">
+              @for (p of paso.lista; track p.id) {
+                <option [ngValue]="p.id" [disabled]="p.agotado">{{ p.nombre }} · ${{ p.precioB2c }}{{ p.agotado ? ' (agotado)' : '' }}</option>
+              }
+            </select>
+          </div>
+        }
+
+        <div class="flex items-center justify-between pt-2">
+          <span class="text-sm font-bold text-cacao">Paquetes</span>
+          <div class="flex items-center gap-3">
+            <button type="button" (click)="cambiarCantidad(-1)" class="w-9 h-9 rounded-full bg-maiz font-black text-cacao">−</button>
+            <span class="w-6 text-center font-extrabold text-cacao">{{ cantidad }}</span>
+            <button type="button" (click)="cambiarCantidad(1)" class="w-9 h-9 rounded-full bg-maiz font-black text-cacao">+</button>
+          </div>
+        </div>
+
+        <div class="rounded-2xl bg-crema p-4 text-sm text-cacao">
+          <div class="flex justify-between"><span>Por separado</span><span class="line-through">${{ porSeparado() * cantidad }} MXN</span></div>
+          <div class="flex justify-between text-lg font-black mt-1"><span>Tu paquete</span><span class="text-milpa">${{ precioPaquete() * cantidad }} MXN</span></div>
+        </div>
+
+        @if (mensaje()) { <p class="rounded-2xl bg-red-50 border border-red-200 px-3 py-2 text-xs text-red-700">{{ mensaje() }}</p> }
+
+        <button type="button" (click)="agregar()"
+                class="w-full py-3.5 rounded-full bg-milpa text-white font-bold hover:bg-milpa/90 transition">
+          Agregar al carrito · ${{ precioPaquete() * cantidad }} MXN
+        </button>
+      </div>
+    }
+  </div>
+
+  <app-menu-lateral [abierto]="menuAbierto" (cerrar)="menuAbierto = false" />
+  <app-barra-inferior />
+</div>

@@ -3,13 +3,12 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
-import { BarraInferior } from '../../../compartidos/barra-inferior/barra-inferior';
 import { BarraSuperior } from '../../../compartidos/barra-superior/barra-superior';
 import { MenuLateral } from '../../../compartidos/menu-lateral/menu-lateral';
 import { CatalogoService } from '../../../servicios/catalogo.service';
 
 @Component({
-  imports: [FormsModule, RouterLink, BarraSuperior, BarraInferior, MenuLateral],
+  imports: [FormsModule, RouterLink, BarraSuperior, MenuLateral],
   selector: 'app-formulario-producto',
   styleUrl: './formulario-producto.css',
   templateUrl: './formulario-producto.html',

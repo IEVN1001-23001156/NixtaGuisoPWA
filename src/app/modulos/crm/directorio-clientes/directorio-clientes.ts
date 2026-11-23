@@ -3,7 +3,6 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
-import { BarraInferior } from '../../../compartidos/barra-inferior/barra-inferior';
 import { BarraSuperior } from '../../../compartidos/barra-superior/barra-superior';
 import { MenuLateral } from '../../../compartidos/menu-lateral/menu-lateral';
 
@@ -21,7 +20,7 @@ interface RespuestaClientesCrm {
 }
 
 @Component({
-  imports: [FormsModule, RouterLink, BarraSuperior, BarraInferior, MenuLateral],
+  imports: [FormsModule, RouterLink, BarraSuperior, MenuLateral],
   selector: 'app-directorio-clientes',
   styleUrl: './directorio-clientes.css',
   templateUrl: './directorio-clientes.html',

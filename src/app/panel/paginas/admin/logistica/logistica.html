@@ -1,0 +1,120 @@
+<div class="flex flex-wrap items-end justify-between gap-3">
+  <div><h1 class="text-3xl lg:text-4xl font-extrabold">Logística y despacho</h1><p class="text-sm opacity-70">Pedidos por estado, pagos y reparto</p></div>
+  <div class="flex flex-wrap gap-2">
+    @for (t of [['tablero','Tablero','view_kanban'],['programados','Programados','event_repeat'],['mapa','Mapa de rutas','map'],['repartidores','Repartidores','two_wheeler']]; track t[0]) {
+      <button (click)="pestana.set($any(t[0]))" class="btn btn-chico shadow-sm" [class]="pestana() === t[0] ? 'bg-nixta-verde text-white' : 'bg-white'">
+        <span class="material-symbols-rounded text-lg">{{ t[2] }}</span> {{ t[1] }}
+      </button>
+    }
+  </div>
+</div>
+
+@switch (pestana()) {
+  @case ('tablero') {
+    <div class="mt-4 flex flex-wrap items-center gap-3">
+      <button (click)="generarProgramados()" class="btn-naranja btn-chico"><span class="material-symbols-rounded text-lg">event_repeat</span> Generar programados de hoy</button>
+      <button (click)="cargar()" class="btn-borde btn-chico"><span class="material-symbols-rounded text-lg">refresh</span> Actualizar</button>
+      <label class="ml-auto flex items-center gap-2 text-sm font-bold">Día:
+        <input type="date" class="campo-gris w-auto py-2" [value]="fecha()" (change)="fecha.set($any($event.target).value || hoy)">
+      </label>
+      @if (fecha() !== hoy) { <button (click)="fecha.set(hoy)" class="btn-borde btn-chico">Hoy</button> }
+    </div>
+
+    <section class="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5 items-start">
+      @for (col of columnas; track col.estado) {
+        <div class="rounded-3xl bg-nixta-dorado/15 p-3">
+          <div class="flex items-center justify-between px-2 py-1">
+            <h2 class="font-extrabold">{{ col.titulo }}</h2>
+            <span class="min-w-7 h-7 px-2 rounded-full grid place-items-center text-xs font-black {{ col.color }}">{{ porColumna()[col.estado].length }}</span>
+          </div>
+          <div class="mt-2 space-y-3">
+            @for (p of porColumna()[col.estado]; track p.id_pedido) {
+              <article class="bg-white rounded-2xl p-3.5 shadow-sm border-2 transition" [class]="detalle()?.id_pedido === p.id_pedido ? 'border-nixta-verde' : 'border-transparent'">
+                <button (click)="verDetalle(p.id_pedido)" class="text-left font-extrabold text-nixta-verde underline">{{ folio(p.id_pedido) }} · {{ p.cliente }}</button>
+                <p class="text-xs opacity-70 mt-0.5 line-clamp-2">{{ p.resumen }}</p>
+                <div class="mt-2 flex items-center justify-between">
+                  <span class="chip" [class]="p.tipo_cliente === 'B2B' ? 'chip bg-nixta-verde text-white' : 'chip bg-nixta-amarillo text-nixta-cafe'">{{ p.tipo_cliente }}</span>
+                  <span class="font-black">{{ p.total | currency:'MXN':'symbol-narrow':'1.2-2' }}</span>
+                </div>
+                <p class="mt-1 text-xs opacity-70">{{ p.fecha_pedido.slice(11, 16) }} h · {{ p.modalidad === 'domicilio' ? 'A domicilio' : 'Recoger en cocina' }}@if (p.programado) { · Programado}</p>
+                <p class="mt-2 chip" [class]="p.estado_pago === 'pagado' ? 'chip bg-nixta-verde/15 text-nixta-verde' : 'chip bg-nixta-naranja text-nixta-cafe'">
+                  {{ p.metodo_pago === 'tarjeta' ? 'Tarjeta' : 'Transferencia' }} · {{ nombrePago[p.estado_pago] }}
+                </p>
+                @if (p.repartidor) { <p class="mt-1 text-xs"><span class="material-symbols-rounded text-sm align-middle">two_wheeler</span> {{ p.repartidor }}</p> }
+
+                <!-- Acción principal según el estado -->
+                <div class="mt-3 space-y-2">
+                  @if (p.estado === 'pendiente' && p.estado_pago !== 'pagado') {
+                    @if (p.tiene_comprobante) { <button (click)="verComprobante(p.id_pedido)" class="w-full btn-borde btn-chico">Ver comprobante</button> }
+                    <div class="grid grid-cols-2 gap-2">
+                      <button (click)="pago(p, 'validar')" [disabled]="procesando() === p.id_pedido" class="btn-verde btn-chico">Validar pago</button>
+                      <button (click)="pago(p, 'rechazar')" [disabled]="procesando() === p.id_pedido" class="btn btn-chico bg-red-50 text-red-700">Rechazar</button>
+                    </div>
+                  } @else if (p.estado === 'pendiente') {
+                    <button (click)="cambiarEstado(p, 'preparando')" [disabled]="procesando() === p.id_pedido" class="w-full btn-verde btn-chico">Pasar a preparando</button>
+                  } @else if (p.estado === 'preparando' && p.modalidad === 'domicilio') {
+                    <select class="campo-gris py-1.5 text-sm" [(ngModel)]="asignaciones[p.id_pedido]" [name]="'rep' + p.id_pedido">
+                      <option [ngValue]="undefined" disabled>Elige repartidor…</option>
+                      @for (r of repartidores(); track r.id_repartidor) { <option [ngValue]="r.id_repartidor">{{ r.nombre }}</option> }
+                    </select>
+                    <button (click)="enviar(p)" [disabled]="procesando() === p.id_pedido" class="w-full btn-verde btn-chico">Enviar en ruta</button>
+                  } @else if (p.estado === 'preparando' || p.estado === 'en_ruta') {
+                    <button (click)="cambiarEstado(p, 'entregado')" [disabled]="procesando() === p.id_pedido" class="w-full btn-verde btn-chico">Marcar entregado</button>
+                  }
+                  @if (p.estado !== 'entregado' && p.estado !== 'cancelado') {
+                    <button (click)="cambiarEstado(p, 'cancelado')" class="w-full text-xs font-bold text-red-600 hover:underline">Cancelar pedido</button>
+                  }
+                </div>
+              </article>
+            } @empty { <p class="text-xs opacity-60 px-2 py-3">Sin pedidos</p> }
+          </div>
+        </div>
+      }
+    </section>
+
+    <!-- Detalle del pedido seleccionado -->
+    @if (detalle(); as d) {
+      <section class="mt-5 tarjeta">
+        <div class="flex items-center justify-between"><h2 class="titulo-seccion">Pedido {{ folio(d.id_pedido) }}</h2><button (click)="detalle.set(null)" aria-label="Cerrar"><span class="material-symbols-rounded">close</span></button></div>
+        <div class="mt-3 grid gap-4 md:grid-cols-2 text-sm">
+          <div class="space-y-1">
+            <p><strong>{{ d.nombre_negocio || d.cliente }}</strong> · Tel. <a class="underline" [href]="'tel:' + d.telefono_contacto">{{ d.telefono_contacto }}</a></p>
+            <p class="opacity-80">{{ d.modalidad === 'domicilio' ? d.direccion_entrega : 'Recoger en cocina' }}</p>
+            @if (d.preferencias) { <p class="rounded-xl bg-nixta-amarillo/40 px-3 py-2"><strong>Preferencias:</strong> {{ d.preferencias }}</p> }
+            @if (d.notas) { <p><strong>Notas:</strong> {{ d.notas }}</p> }
+            @if (d.repartidor) { <p><strong>Repartidor:</strong> {{ d.repartidor.nombre }} · {{ d.repartidor.placas }} @if (d.orden_ruta) {· parada {{ d.orden_ruta }}}</p> }
+          </div>
+          <ul class="space-y-1">
+            @for (x of d.productos; track $index) { <li class="flex justify-between gap-2"><span>{{ x.cantidad }} × {{ x.nombre }} <span class="opacity-60">({{ x.presentacion }})</span></span><span>{{ x.subtotal | currency:'MXN':'symbol-narrow':'1.2-2' }}</span></li> }
+            <li class="flex justify-between font-extrabold border-t border-nixta-cafe/10 pt-1"><span>Total</span><span>{{ d.total | currency:'MXN':'symbol-narrow':'1.2-2' }}</span></li>
+          </ul>
+        </div>
+      </section>
+    }
+  }
+  @case ('programados') {
+    <section class="mt-4 tarjeta overflow-x-auto">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div><h2 class="titulo-seccion">Pedidos programados activos</h2><p class="text-xs opacity-60">Para planear la producción: cada día, "Generar programados de hoy" los convierte en pedidos.</p></div>
+        <button (click)="generarProgramados()" class="btn-naranja btn-chico">Generar programados de hoy</button>
+      </div>
+      <table class="tabla mt-3">
+        <thead><tr><th>Próxima entrega</th><th>Cliente</th><th>Tipo</th><th>Horario</th><th>Productos</th><th>Dirección</th></tr></thead>
+        <tbody>
+          @for (g of programados(); track g.id_programacion) {
+            <tr>
+              <td class="font-bold whitespace-nowrap">{{ g.proxima_entrega ?? '—' }} @if (g.proxima_entrega === hoy) {<span class="chip bg-maiz text-cacao">Hoy</span>}</td>
+              <td>{{ g.cliente }}<p class="text-xs opacity-60">{{ g.telefono }}</p></td>
+              <td><span class="chip bg-crema">{{ g.tipo === 'negocio' ? 'Negocio' : 'Evento' }} · {{ g.frecuencia === 'semanal' ? 'semanal' : 'una vez' }}</span></td>
+              <td class="whitespace-nowrap">{{ g.hora_desde }}–{{ g.hora_hasta }}</td>
+              <td class="text-xs">{{ g.resumen }}@if (g.notas) {<p class="opacity-60">{{ g.notas }}</p>}</td>
+              <td class="text-xs">{{ g.direccion_entrega }}</td>
+            </tr>
+          } @empty { <tr><td colspan="6" class="text-center opacity-60 py-4">No hay pedidos programados activos</td></tr> }
+        </tbody>
+      </table>
+    </section>
+  }
+  @case ('mapa') { <div class="mt-4"><app-rutas /></div> }
+  @case ('repartidores') { <div class="mt-4"><app-repartidores /></div> }
+}

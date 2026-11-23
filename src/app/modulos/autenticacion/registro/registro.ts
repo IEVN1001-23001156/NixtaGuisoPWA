@@ -50,8 +50,10 @@ export class Registro {
       }
 
       await this.router.navigate(['/inicio']);
-    } catch {
-      this.errorMensaje.set('No se pudo conectar con el servidor');
+    } catch (e: any) {
+      this.errorMensaje.set(
+        e?.status ? (e?.error?.mensaje || 'No se pudo crear la cuenta') : 'No se pudo conectar con el servidor'
+      );
     } finally {
       this.cargando.set(false);
     }

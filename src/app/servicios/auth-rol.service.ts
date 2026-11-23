@@ -1,5 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable, signal } from '@angular/core';
+import { CarritoService } from './carrito.service';
+import { FotoPerfilService } from './foto-perfil.service';
 import { firstValueFrom } from 'rxjs';
 
 export type RolUsuario = 'cliente' | 'admin';
@@ -38,6 +40,8 @@ export interface RespuestaAuth {
 })
 export class AuthRolService {
   private readonly http = inject(HttpClient);
+  private readonly carrito = inject(CarritoService);
+  private readonly fotoPerfil = inject(FotoPerfilService);
   private readonly apiUrl = 'http://localhost:5000/api/auth';
 
   readonly usuario = signal<UsuarioSesion | null>(null);
@@ -56,6 +60,16 @@ export class AuthRolService {
     this.usuario.set(usuario);
     this.rol.set(usuario?.rol ?? 'cliente');
     this.tipoCuenta.set(usuario?.cliente?.tipo ?? null);
+
+    this.carrito.cargarCarritoUsuario(usuario?.id_usuario ?? null);
+
+    if (!usuario) {
+      this.fotoPerfil.limpiar();
+      return;
+    }
+
+    const fotoGuardada = localStorage.getItem(`nixtaguiso_foto_${usuario.id_usuario}`);
+    this.fotoPerfil.establecerFoto(fotoGuardada);
   }
 
   establecerRolPrueba(nuevoRol: RolUsuario): void {

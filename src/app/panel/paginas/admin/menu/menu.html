@@ -1,0 +1,121 @@
+<div class="flex flex-wrap items-end justify-between gap-3">
+  <div><h1 class="text-3xl lg:text-4xl font-extrabold">Gestión de menú</h1><p class="text-sm opacity-70">Alta, edición y pausa de productos con sus tres tarifas</p></div>
+  <div class="flex flex-wrap gap-2">
+    <button (click)="vista.set('productos')" class="btn btn-chico border-2" [class]="vista() === 'productos' ? 'bg-cacao text-crema border-cacao' : 'bg-white border-cacao/15'">Productos</button>
+    <button (click)="vista.set('categorias')" class="btn btn-chico border-2" [class]="vista() === 'categorias' ? 'bg-cacao text-crema border-cacao' : 'bg-white border-cacao/15'">Categorías</button>
+    <button (click)="nuevo(); vista.set('productos')" class="btn-verde btn-chico">+ Nuevo producto</button>
+  </div>
+</div>
+
+@if (vista() === 'categorias') {
+  <section class="mt-5 tarjeta overflow-x-auto">
+    <h2 class="titulo-seccion">Líneas de producto</h2>
+    <p class="text-xs opacity-60">Las 5 líneas del documento son fijas; aquí se editan su nombre, descripción y orden en el catálogo.</p>
+    <table class="tabla mt-3">
+      <thead><tr><th>Nombre</th><th>Descripción</th><th class="w-24">Orden</th><th class="text-right">Productos</th><th></th></tr></thead>
+      <tbody>
+        @for (c of listaCategorias(); track c.id_categoria; let i = $index) {
+          <tr>
+            <td><input #nombre class="campo-gris py-1.5" [value]="c.nombre"></td>
+            <td><input #descripcion class="campo-gris py-1.5" [value]="c.descripcion ?? ''"></td>
+            <td><input #orden class="campo-gris py-1.5" type="number" [value]="i + 1"></td>
+            <td class="text-right">{{ c.total_productos }}</td>
+            <td><button (click)="guardarCategoria(c, nombre.value, descripcion.value, orden.value)" class="btn-verde btn-chico">Guardar</button></td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </section>
+} @else {
+
+<section class="mt-5 tarjeta">
+  <div class="flex flex-wrap items-center gap-2">
+    <button (click)="filtro.set('todos')" class="btn btn-chico border-2" [class]="filtro() === 'todos' ? 'bg-nixta-cafe text-white border-nixta-cafe' : 'border-nixta-cafe/20'">Todos</button>
+    @for (c of categorias(); track c.id) {
+      <button (click)="filtro.set(c.id.toString())" class="btn btn-chico border-2" [class]="filtro() === c.id.toString() ? 'bg-nixta-cafe text-white border-nixta-cafe' : 'border-nixta-cafe/20'">{{ c.nombre }}</button>
+    }
+    <button (click)="filtro.set('paquetes')" class="btn btn-chico border-2" [class]="filtro() === 'paquetes' ? 'bg-nixta-cafe text-white border-nixta-cafe' : 'border-nixta-cafe/20'">Paquetes</button>
+    <input [value]="buscar()" (input)="buscar.set($any($event.target).value)" placeholder="Buscar producto" class="campo-gris ml-auto max-w-56 py-2">
+  </div>
+
+  <div class="mt-4 overflow-x-auto">
+    <table class="tabla">
+      <thead><tr><th>Producto</th><th>Presentación</th><th class="text-right">B2C</th><th class="text-right">B2B N1</th><th class="text-right">B2B N2</th><th class="text-right">Margen</th><th class="text-right">Existencia</th><th>Estado</th></tr></thead>
+      <tbody>
+        @for (p of visibles(); track p.id_producto) {
+          <tr (click)="editar(p)" class="cursor-pointer transition" [class]="seleccionado()?.id_producto === p.id_producto ? 'bg-nixta-amarillo/40' : 'hover:bg-nixta-amarillo/20'">
+            <td class="font-bold text-nixta-verde underline">{{ p.nombre }}</td>
+            <td>{{ p.presentacion }}</td>
+            <td class="text-right">{{ p.precio_b2c | currency:'MXN':'symbol-narrow':'1.2-2' }}</td>
+            <td class="text-right">{{ p.es_paquete ? '—' : (p.precio_b2b_n1 | currency:'MXN':'symbol-narrow':'1.2-2') }}</td>
+            <td class="text-right">{{ p.es_paquete ? '—' : (p.precio_b2b_n2 | currency:'MXN':'symbol-narrow':'1.2-2') }}</td>
+            <td class="text-right">{{ p.es_paquete ? '—' : (p.margen_b2c | number:'1.1-1') + ' %' }}</td>
+            <td class="text-right">{{ p.es_paquete ? '—' : (p.existencia | number:'1.0-2') }}</td>
+            <td>
+              <button (click)="alternar(p, $event)" class="chip" [class]="p.disponible ? 'chip bg-nixta-verde text-white' : 'chip bg-gray-300 text-nixta-cafe'">
+                {{ p.disponible ? 'Activo' : 'Pausado' }}
+              </button>
+            </td>
+          </tr>
+        } @empty { <tr><td colspan="8" class="text-center opacity-60 py-4">No hay productos con ese filtro</td></tr> }
+      </tbody>
+    </table>
+  </div>
+  <p class="mt-3 text-xs opacity-60">Toca un producto para editarlo. Cada cambio se refleja de inmediato en el catálogo; los productos pausados se muestran como agotados.</p>
+</section>
+
+<!-- ===== Editor (en la misma pantalla) ===== -->
+@if (modo() !== 'cerrado') {
+  <section id="editor-producto" class="mt-5 tarjeta">
+    <div class="flex items-center justify-between gap-3">
+      <h2 class="titulo-seccion">{{ modo() === 'nuevo' ? 'Nuevo producto' : 'Editar producto' }}</h2>
+      <button (click)="cerrar()" class="w-9 h-9 grid place-items-center rounded-full hover:bg-nixta-crema" aria-label="Cerrar"><span class="material-symbols-rounded">close</span></button>
+    </div>
+
+    <div class="mt-4 grid gap-5 lg:grid-cols-[220px_1fr]">
+      <!-- Foto -->
+      <div class="text-center">
+        <div class="mx-auto w-44 h-44 rounded-3xl overflow-hidden bg-nixta-crema grid place-items-center">
+          @if (urlFoto(seleccionado()?.imagen_url ?? null); as foto) { <img [src]="foto" alt="" class="w-full h-full object-cover"> }
+          @else { <img src="Isotipo.png" alt="" class="w-24 opacity-60"> }
+        </div>
+        @if (seleccionado()) {
+          <label class="btn-cafe btn-chico mt-3 cursor-pointer"><span class="material-symbols-rounded text-lg">photo_camera</span> Cambiar foto
+            <input type="file" accept=".jpg,.jpeg,.png,.webp" class="sr-only" (change)="subirFoto($event)"></label>
+        } @else { <p class="mt-3 text-xs opacity-60">La foto se sube después de crear el producto.</p> }
+      </div>
+
+      <!-- Datos -->
+      <div class="grid gap-3 sm:grid-cols-2">
+        @if (seleccionado()?.es_paquete) {
+          <p class="sm:col-span-2 text-sm rounded-xl bg-nixta-amarillo/40 px-3 py-2">Paquete "Comida Completa": se editan el nombre, la descripción y el precio. El cliente elige la salsa y el agua al comprarlo.</p>
+        } @else {
+          <label><span class="etiqueta">Línea</span>
+            <select class="campo-gris" [(ngModel)]="f.id_categoria" name="categoria">@for (c of categorias(); track c.id) {<option [ngValue]="c.id">{{ c.nombre }}</option>}</select></label>
+          <label><span class="etiqueta">Presentación</span><input class="campo-gris" [(ngModel)]="f.presentacion" name="presentacion" placeholder="1 kg, 1 L, 100 ml…"></label>
+        }
+        <label class="sm:col-span-2"><span class="etiqueta">Nombre</span><input class="campo-gris" [(ngModel)]="f.nombre" name="nombre"></label>
+        <label class="sm:col-span-2"><span class="etiqueta">Descripción</span><textarea rows="2" class="campo-gris" [(ngModel)]="f.descripcion" name="descripcion"></textarea></label>
+        <label><span class="etiqueta">Precio Hogar (B2C)</span><input class="campo-gris" type="number" step="0.01" [(ngModel)]="f.precio_b2c" name="b2c"></label>
+        @if (!seleccionado()?.es_paquete) {
+          <div class="flex items-end"><button type="button" (click)="sugerirPrecios()" class="btn-naranja btn-chico w-full">Sugerir B2B (−10 % / −15 %)</button></div>
+          <label><span class="etiqueta">B2B nivel 1</span><input class="campo-gris" type="number" step="0.01" [(ngModel)]="f.precio_b2b_n1" name="n1"></label>
+          <label><span class="etiqueta">B2B nivel 2</span><input class="campo-gris" type="number" step="0.01" [(ngModel)]="f.precio_b2b_n2" name="n2"></label>
+          <label><span class="etiqueta">Costo por unidad</span><input class="campo-gris" type="number" step="0.01" [(ngModel)]="f.costo_unitario" name="costo"></label>
+          <label><span class="etiqueta">Equivalencia en kg</span><input class="campo-gris" type="number" step="0.001" [(ngModel)]="f.kg_por_unidad" name="kg"></label>
+          <div class="sm:col-span-2 rounded-2xl bg-nixta-crema px-4 py-3 text-sm flex flex-wrap gap-x-6 gap-y-1">
+            <span>Margen bruto (B2C): <strong [class.text-red-600]="(margenActual() ?? 0) < 30">{{ margenActual() ?? '—' }} %</strong></span>
+            @if (seleccionado()) { <span>Existencia: <strong>{{ seleccionado()?.existencia }}</strong> <span class="opacity-60">(sube con la producción)</span></span> }
+          </div>
+          <label class="sm:col-span-2 flex items-center gap-2 text-sm font-semibold"><input type="checkbox" [(ngModel)]="f.disponible" name="disponible" class="w-4 h-4 accent-nixta-verde"> Disponible en el catálogo</label>
+        }
+        @if (error()) { <p class="sm:col-span-2 caja-error">{{ error() }}</p> }
+        <div class="sm:col-span-2 flex flex-wrap gap-3">
+          <button (click)="guardar()" [disabled]="guardando()" class="btn-verde flex-1">{{ guardando() ? 'Guardando…' : 'Guardar cambios' }}</button>
+          @if (seleccionado() && !seleccionado()?.es_paquete) { <button (click)="darDeBaja()" class="btn bg-red-50 text-red-700 border-2 border-red-200">Dar de baja</button> }
+        </div>
+      </div>
+    </div>
+  </section>
+}
+}

@@ -1,0 +1,105 @@
+<div class="flex flex-wrap items-end justify-between gap-3">
+  <div>
+    <h1 class="text-3xl lg:text-4xl font-extrabold">Panel operativo</h1>
+    <p class="text-sm opacity-70">Hola, {{ primerNombre() }}. Resumen del día, alertas y metas del mes</p>
+  </div>
+  <div class="flex items-center gap-2">
+    <input type="date" class="campo-gris w-auto py-2" [value]="fecha()" (change)="cambiarFecha($any($event.target).value)" aria-label="Día del panel">
+    @if (fecha() !== hoy) { <button (click)="cambiarFecha(hoy)" class="btn-borde btn-chico">Hoy</button> }
+  </div>
+</div>
+
+@if (datos(); as d) {
+  <!-- Tarjetas del día -->
+  <section class="mt-6 grid grid-cols-2 xl:grid-cols-4 gap-4">
+    <div class="tarjeta">
+      <p class="text-sm font-bold">Ventas {{ fecha() === hoy ? "del día" : "del " + fecha() }}</p>
+      <p class="mt-1 text-3xl font-black text-milpa">{{ d.tarjetas.ventas_dia | currency:'MXN':'symbol-narrow':'1.2-2' }}</p>
+      <p class="text-xs opacity-70">{{ d.tarjetas.pedidos_dia }} pedido(s) registrados hoy</p>
+    </div>
+    <div class="tarjeta"><p class="text-sm font-bold">Kilos vendidos {{ fecha() === hoy ? "hoy" : "ese día" }}</p><p class="mt-1 text-3xl font-black text-nixta-verde">{{ d.tarjetas.kg_vendidos_dia | number:'1.0-1' }} kg</p><p class="text-xs opacity-70">Ticket promedio {{ (d.tarjetas.ticket_promedio_dia ?? 0) | currency:'MXN':'symbol-narrow':'1.0-0' }}</p></div>
+    <a routerLink="/admin/logistica" class="tarjeta hover:shadow-lg transition"><p class="text-sm font-bold">Pedidos activos</p><p class="mt-1 text-3xl font-black text-nixta-verde">{{ d.tarjetas.pedidos_activos }}</p><p class="text-xs opacity-70">Sin entregar todavía</p></a>
+    <a routerLink="/admin/crm" class="tarjeta hover:shadow-lg transition"><p class="text-sm font-bold">Usuarios registrados</p><p class="mt-1 text-3xl font-black text-nixta-verde">{{ d.tarjetas.usuarios_registrados }}</p><p class="text-xs opacity-70">{{ d.tarjetas.clientes_b2c }} hogares · {{ d.tarjetas.clientes_b2b }} negocios</p></a>
+  </section>
+
+  <section class="mt-5 grid gap-5 xl:grid-cols-[3fr_2fr]">
+    <!-- Kilos por canal y mezcla -->
+    <div class="tarjeta">
+      <h2 class="titulo-seccion">Kilos vendidos por canal · 6 días hasta {{ fecha() === hoy ? "hoy" : fecha() }}</h2>
+      <div class="mt-3 h-64"><canvas #barras></canvas></div>
+      <div class="mt-5 flex items-center gap-5">
+        <div class="w-32 h-32 shrink-0 relative">
+          <canvas #dona></canvas>
+          @if (mezcla()?.b2b === null) { <p class="absolute inset-0 grid place-items-center text-xs opacity-60 text-center">Sin ventas<br>este mes</p> }
+        </div>
+        <div>
+          @if (mezcla()?.b2b !== null) {
+            <p class="text-lg font-extrabold">B2B {{ mezcla()?.b2b }} % · B2C {{ mezcla()?.b2c }} %</p>
+          }
+          <p class="text-sm opacity-70">Meta de mezcla del documento: 75 % negocios / 25 % hogares</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Metas del mes -->
+    <div class="tarjeta">
+      <div class="flex items-baseline justify-between"><h2 class="titulo-seccion">Metas</h2><a routerLink="/admin/reportes" class="text-xs font-bold text-nixta-verde">Ver reportes</a></div>
+      <ul class="mt-4 space-y-4">
+        @for (m of metas(); track m.indicador) {
+          <li>
+            <div class="flex items-center justify-between gap-2">
+              <p class="text-sm font-bold">{{ m.nombre }}</p>
+              <span class="chip" [class]="m.cumple ? 'chip bg-nixta-verde text-white' : m.cumple === false ? 'chip bg-nixta-naranja text-nixta-cafe' : 'chip bg-gray-200'">
+                {{ m.cumple ? 'Meta cumplida' : m.cumple === false ? 'En camino' : 'Sin datos' }}
+              </span>
+            </div>
+            <div class="mt-1.5 h-2.5 rounded-full bg-nixta-crema overflow-hidden"><div class="h-full rounded-full bg-nixta-verde transition-all" [style.width.%]="avance(m)"></div></div>
+            <p class="mt-1 text-xs opacity-70">{{ textoValor(m) }} @if (m.fecha_meta) {· meta al {{ m.fecha_meta }}}</p>
+          </li>
+        }
+      </ul>
+    </div>
+  </section>
+
+  <section class="mt-5 grid gap-5 xl:grid-cols-[3fr_2fr]">
+    <!-- Pedidos de hoy -->
+    <div class="tarjeta overflow-x-auto">
+      <div class="flex items-baseline justify-between"><h2 class="titulo-seccion">Pedidos {{ fecha() === hoy ? "de hoy" : "del " + fecha() }}</h2><a routerLink="/admin/logistica" class="text-xs font-bold text-nixta-verde">Ir a logística</a></div>
+      <table class="tabla mt-3">
+        <thead><tr><th>Pedido</th><th>Cliente</th><th>Canal</th><th class="text-right">Total</th><th>Estado</th></tr></thead>
+        <tbody>
+          @for (p of pedidosHoy(); track p.id_pedido) {
+            <tr>
+              <td><a routerLink="/admin/logistica" [queryParams]="{ pedido: p.id_pedido }" class="font-bold text-nixta-verde underline">NG-{{ p.id_pedido.toString().padStart(4, '0') }}</a></td>
+              <td>{{ p.cliente }}</td>
+              <td><span class="chip" [class]="p.tipo_cliente === 'B2B' ? 'chip bg-nixta-verde text-white' : 'chip bg-nixta-amarillo text-nixta-cafe'">{{ p.tipo_cliente }}</span></td>
+              <td class="text-right font-bold">{{ p.total | currency:'MXN':'symbol-narrow':'1.2-2' }}</td>
+              <td><span class="chip {{ colorEstado[p.estado] }}">{{ nombreEstado[p.estado] }}</span></td>
+            </tr>
+          } @empty { <tr><td colspan="5" class="text-center opacity-60 py-4">No hay pedidos ese día</td></tr> }
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Alertas y más vendidos -->
+    <div class="space-y-5">
+      <div class="tarjeta">
+        <h2 class="titulo-seccion">Alertas</h2>
+        <ul class="mt-3 space-y-2">
+          @for (a of d.alertas; track $index) {
+            <li class="rounded-2xl border-l-8 bg-nixta-crema px-3 py-2 text-sm font-semibold"
+                [class.border-nixta-naranja]="a.tipo === 'insumo'" [class.border-red-400]="a.tipo === 'producto'" [class.border-nixta-verde]="a.tipo === 'pago'">{{ a.mensaje }}</li>
+          } @empty { <li class="text-sm opacity-70">Sin alertas. Todo en orden ✓</li> }
+        </ul>
+      </div>
+      <div class="tarjeta">
+        <h2 class="titulo-seccion">Más vendidos (30 días)</h2>
+        <ol class="mt-3 space-y-2 text-sm">
+          @for (p of d.mas_vendidos; track p.nombre; let i = $index) {
+            <li class="flex justify-between gap-2"><span><strong>{{ i + 1 }}.</strong> {{ p.nombre }} <span class="opacity-60">({{ p.cantidad | number:'1.0-1' }})</span></span><span class="font-bold">{{ p.importe | currency:'MXN':'symbol-narrow':'1.0-0' }}</span></li>
+          } @empty { <li class="opacity-60">Aún no hay ventas</li> }
+        </ol>
+      </div>
+    </div>
+  </section>
+}

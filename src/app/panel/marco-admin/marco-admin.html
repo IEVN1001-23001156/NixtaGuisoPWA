@@ -1,0 +1,65 @@
+<div class="min-h-screen bg-crema pb-16 text-cacao">
+  <app-barra-superior (abrirMenu)="menuAbierto = true" />
+
+  <div class="max-w-6xl mx-auto px-5 lg:px-8 pt-5 lg:pt-8">
+    <!-- Buscador y avisos -->
+    <div class="flex items-center gap-3">
+      <div class="relative flex-1">
+        <svg class="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-cacao/50" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path stroke-linecap="round" d="m20 20-3.5-3.5"/></svg>
+        <input [(ngModel)]="textoBusqueda" (input)="buscar(textoBusqueda)" name="buscar" autocomplete="off"
+               placeholder="Buscar pedido, cliente o producto"
+               class="w-full pl-11 pr-4 py-3 rounded-full bg-white text-cacao text-sm border border-cacao/15 focus:outline-none focus:ring-2 focus:ring-maiz">
+        @if (resultados().length) {
+          <ul class="absolute mt-2 inset-x-0 bg-white rounded-2xl shadow-xl border border-cacao/10 overflow-hidden z-40">
+            @for (r of resultados(); track r.tipo + r.id) {
+              <li>
+                <button (click)="abrirResultado(r)" class="w-full text-left px-4 py-2.5 hover:bg-crema flex items-center gap-3">
+                  <span class="px-2 py-0.5 rounded-full bg-maiz/20 text-cacao text-[11px] font-bold">{{ r.tipo }}</span>
+                  <span class="text-sm truncate">{{ r.texto }}</span>
+                </button>
+              </li>
+            }
+          </ul>
+        }
+      </div>
+
+      <div class="relative">
+        <button (click)="avisosAbiertos.set(!avisosAbiertos())" aria-label="Avisos"
+                class="relative w-12 h-12 grid place-items-center rounded-full bg-white border border-cacao/15 hover:bg-maiz/20 transition">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.4-1.4A2 2 0 0 1 18 14.2V11a6 6 0 1 0-12 0v3.2a2 2 0 0 1-.6 1.4L4 17h5m6 0a3 3 0 1 1-6 0"/></svg>
+          @if (contadores().avisos?.length) {
+            <span class="absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-salsa text-white text-[11px] font-black grid place-items-center">{{ contadores().avisos.length }}</span>
+          }
+        </button>
+        @if (avisosAbiertos()) {
+          <div class="absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-xl border border-cacao/10 overflow-hidden z-40">
+            <p class="px-4 py-3 font-extrabold border-b border-cacao/10">Avisos</p>
+            @for (a of contadores().avisos; track $index) {
+              <button (click)="irAviso(a)" class="w-full text-left px-4 py-3 text-sm hover:bg-crema flex gap-3 border-b border-cacao/5">
+                <span class="mt-1 w-2.5 h-2.5 rounded-full shrink-0" [class]="a.tipo === 'pago' ? 'bg-milpa' : a.tipo === 'producto' ? 'bg-salsa' : 'bg-maiz'"></span>
+                <span>{{ a.mensaje }}</span>
+              </button>
+            } @empty { <p class="px-4 py-4 text-sm text-cacao/70">Sin avisos. Todo en orden ✓</p> }
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- Accesos rápidos a las secciones del panel -->
+    <nav class="mt-4 flex gap-2 overflow-x-auto pb-1">
+      @for (op of menu; track op.ruta) {
+        <a [routerLink]="op.ruta" routerLinkActive="!bg-cacao !text-crema !border-cacao"
+           class="shrink-0 px-4 py-2 rounded-full bg-white text-cacao text-xs lg:text-sm font-bold border border-cacao/15 hover:bg-maiz/20 transition flex items-center gap-2">
+          {{ op.texto }}
+          @if (op.contador && contadores()[op.contador] > 0) {
+            <span class="min-w-5 h-5 px-1 rounded-full bg-maiz text-cacao text-[11px] font-black grid place-items-center">{{ contadores()[op.contador] }}</span>
+          }
+        </a>
+      }
+    </nav>
+
+    <main class="mt-6"><router-outlet /></main>
+  </div>
+
+  <app-menu-lateral [abierto]="menuAbierto" (cerrar)="menuAbierto = false" />
+</div>

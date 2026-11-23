@@ -27,6 +27,7 @@ export interface PedidoHistorialItem {
 
 interface RespuestaCrearPedido {
   exito?: boolean;
+  total?: number;
   mensaje?: string;
   folio?: string;
   id_pedido?: number;
@@ -75,6 +76,9 @@ export class PedidosService {
         cantidad: i.cantidad,
         precio_unitario: i.producto.precio,
         nota_especial: i.notaEspecial,
+        salsa: i.salsa ?? null,
+        agua: i.agua ?? null,
+        arma: i.arma ?? null,
       })),
     };
 
@@ -99,7 +103,7 @@ export class PedidosService {
 
     const confirmado: UltimoPedidoConfirmado = {
       folio,
-      total,
+      total: Number(resp.total ?? total),   // el total real lo calcula Flask
       metodoPago: 'tarjeta',
       direccionResumen: direccionCompleta || 'Entrega a domicilio',
       idPedido,
