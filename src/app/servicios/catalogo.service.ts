@@ -59,6 +59,8 @@ export class CatalogoService {
       descripcion: 'Tortilla de maíz nixtamalizado, molido en piedra.',
       existencia: 77,
       imagenUrl: null,
+      disponible: true,
+      agotado: false,
     },
     {
       id: 2,
@@ -75,6 +77,8 @@ export class CatalogoService {
       descripcion: 'Tortilla de maíz nixtamalizado en tamaño taquero.',
       existencia: 77,
       imagenUrl: null,
+      disponible: true,
+      agotado: false,
     },
     {
       id: 3,
@@ -91,6 +95,8 @@ export class CatalogoService {
       descripcion: 'Sopes de masa martajada con bordes pellizcados.',
       existencia: 11.7,
       imagenUrl: null,
+      disponible: true,
+      agotado: false,
     },
     {
       id: 4,
@@ -107,6 +113,8 @@ export class CatalogoService {
       descripcion: 'Gorditas de masa martajada cocidas en comal.',
       existencia: 11.7,
       imagenUrl: null,
+      disponible: true,
+      agotado: false,
     },
     {
       id: 5,
@@ -123,6 +131,8 @@ export class CatalogoService {
       descripcion: 'Frijoles flor de mayo refritos al estilo casero.',
       existencia: 2.85,
       imagenUrl: null,
+      disponible: true,
+      agotado: false,
     },
     {
       id: 6,
@@ -139,6 +149,8 @@ export class CatalogoService {
       descripcion: 'Nopales guisados a la mexicana con jitomate y cebolla.',
       existencia: 13.3,
       imagenUrl: null,
+      disponible: true,
+      agotado: false,
     },
     {
       id: 7,
@@ -155,6 +167,8 @@ export class CatalogoService {
       descripcion: 'Papa blanca con chorizo artesanal.',
       existencia: 10,
       imagenUrl: null,
+      disponible: true,
+      agotado: false,
     },
     {
       id: 8,
@@ -171,6 +185,8 @@ export class CatalogoService {
       descripcion: 'Chicharrón prensado en salsa de tomate y chile.',
       existencia: 10,
       imagenUrl: null,
+      disponible: true,
+      agotado: false,
     },
     {
       id: 9,
@@ -187,6 +203,8 @@ export class CatalogoService {
       descripcion: 'Salsa de jitomate y chile.',
       existencia: 118,
       imagenUrl: null,
+      disponible: true,
+      agotado: false,
     },
     {
       id: 10,
@@ -203,6 +221,8 @@ export class CatalogoService {
       descripcion: 'Salsa martajada de tomate verde y chile.',
       existencia: 118,
       imagenUrl: null,
+      disponible: true,
+      agotado: false,
     },
     {
       id: 11,
@@ -219,6 +239,8 @@ export class CatalogoService {
       descripcion: 'Guacamole fresco de aguacate Hass.',
       existencia: 125,
       imagenUrl: null,
+      disponible: true,
+      agotado: false,
     },
     {
       id: 12,
@@ -235,6 +257,8 @@ export class CatalogoService {
       descripcion: 'Queso fresco artesanal de leche entera.',
       existencia: 18,
       imagenUrl: null,
+      disponible: true,
+      agotado: false,
     },
     {
       id: 13,
@@ -251,6 +275,8 @@ export class CatalogoService {
       descripcion: 'Crema de rancho sin gomas ni almidones.',
       existencia: 40,
       imagenUrl: null,
+      disponible: true,
+      agotado: false,
     },
     {
       id: 14,
@@ -267,6 +293,8 @@ export class CatalogoService {
       descripcion: 'Agua fresca de arroz con canela.',
       existencia: 23.5,
       imagenUrl: null,
+      disponible: true,
+      agotado: false,
     },
     {
       id: 15,
@@ -283,6 +311,8 @@ export class CatalogoService {
       descripcion: 'Agua fresca de flor de jamaica natural.',
       existencia: 23.5,
       imagenUrl: null,
+      disponible: true,
+      agotado: false,
     },
     {
       id: 16,
@@ -299,6 +329,8 @@ export class CatalogoService {
       descripcion: 'Agua fresca de limón persa con chía.',
       existencia: 23.5,
       imagenUrl: null,
+      disponible: true,
+      agotado: false,
     },
     {
       id: 17,
@@ -315,6 +347,8 @@ export class CatalogoService {
       descripcion: '1 kg de tortilla + 1 L de frijoles + salsa de 100 ml.',
       existencia: 0,
       imagenUrl: null,
+      disponible: true,
+      agotado: false,
     },
     {
       id: 18,
@@ -331,6 +365,8 @@ export class CatalogoService {
       descripcion: '1 kg de tortilla + 1 L de nopales + salsa de 100 ml.',
       existencia: 0,
       imagenUrl: null,
+      disponible: true,
+      agotado: false,
     },
     {
       id: 19,
@@ -347,6 +383,8 @@ export class CatalogoService {
       descripcion: '1 kg de tortilla + 1 L de papas con chorizo + salsa.',
       existencia: 0,
       imagenUrl: null,
+      disponible: true,
+      agotado: false,
     },
     {
       id: 20,
@@ -363,14 +401,16 @@ export class CatalogoService {
       descripcion: '1 kg de tortilla + 1 L de chicharrón en salsa + salsa.',
       existencia: 0,
       imagenUrl: null,
+      disponible: true,
+      agotado: false,
     },
   ];
 
   async obtenerProductos(
     tipoCuenta: TipoCuenta,
-    nivelB2b: number | null = 1
-  ,
-    incluirPausados = false): Promise<ProductoCatalogo[]> {
+    nivelB2b: number | null = 1,
+    _incluirPausados = false
+  ): Promise<ProductoCatalogo[]> {
     const params = new URLSearchParams();
     if (tipoCuenta) {
       params.set('tipo', tipoCuenta);
@@ -401,7 +441,6 @@ export class CatalogoService {
       return listaCruda
         .filter((fila) => {
           const activo = fila['activo'] === undefined ? true : Boolean(fila['activo']);
-          const disponible = fila['disponible'] === undefined ? true : Boolean(fila['disponible']);
           return activo;
         })
         .map((fila, idx) => this.normalizarProducto(fila, idx + 1, tipoCuenta, nivelB2b));
@@ -445,7 +484,6 @@ export class CatalogoService {
     if (limpia.startsWith('http://') || limpia.startsWith('https://')) {
       return limpia;
     }
-    // Las fotos subidas viven en Flask (/uploads/productos/...), no en Angular
     if (limpia.startsWith('/uploads/')) {
       return `http://localhost:5000${limpia}`;
     }
@@ -468,6 +506,29 @@ export class CatalogoService {
       ...prod,
       precio: precioCalculado,
     };
+  }
+
+  private tieneInsumosParaUnaOrden(fila: Record<string, unknown>, ordenMinima: number): boolean {
+    const insumosRaw = fila['insumos_consumo'] ?? fila['insumos'];
+    if (!Array.isArray(insumosRaw) || insumosRaw.length === 0) {
+      return true;
+    }
+    for (const raw of insumosRaw) {
+      if (!raw || typeof raw !== 'object') continue;
+      const ins = raw as Record<string, unknown>;
+      const activo = ins['activo'] === undefined ? true : Boolean(ins['activo']);
+      const existenciaInsumo = Number(
+        ins['existencia_insumo'] ?? ins['existencia'] ?? ins['stock'] ?? 0
+      );
+      const consumoPorUnidad = Number(
+        ins['consumo_por_unidad'] ?? ins['cantidad_por_unidad'] ?? ins['cantidad'] ?? 0
+      );
+      const consumoMinimo = consumoPorUnidad > 0 ? consumoPorUnidad * ordenMinima : 0;
+      if (!activo || existenciaInsumo < consumoMinimo) {
+        return false;
+      }
+    }
+    return true;
   }
 
   private normalizarProducto(
@@ -503,6 +564,19 @@ export class CatalogoService {
     const presentacion = String(
       fila['presentacion'] ?? fila['unidad'] ?? (esPaquete ? 'Paquete' : 'Unidad')
     );
+    const existencia = Number(fila['existencia'] ?? 0);
+    const disponibleFlag = fila['disponible'] === undefined ? true : Boolean(fila['disponible']);
+    const esKg = presentacion.toLowerCase().includes('1 kg') || presentacion.trim().toLowerCase() === 'kg';
+    const ordenMinima = esKg ? 0.5 : 1;
+
+    const sinExistenciaProducto = !esPaquete && existencia < ordenMinima;
+    const sinInsumosOrden = !this.tieneInsumosParaUnaOrden(fila, ordenMinima);
+    const agotadoCalculado =
+      Boolean(fila['agotado']) ||
+      !disponibleFlag ||
+      sinExistenciaProducto ||
+      sinInsumosOrden;
+
     const imagenUrlRaw = fila['imagen_url'] ?? fila['imagen'] ?? null;
 
     return {
@@ -518,9 +592,9 @@ export class CatalogoService {
       unidad: presentacion,
       etiqueta: presentacion,
       descripcion: String(fila['descripcion'] ?? ''),
-      existencia: Number(fila['existencia'] ?? 0),
-      disponible: fila['disponible'] === undefined ? true : Boolean(fila['disponible']),
-      agotado: Boolean(fila['agotado']),
+      existencia,
+      disponible: disponibleFlag && !agotadoCalculado,
+      agotado: agotadoCalculado,
       imagenUrl: imagenUrlRaw ? String(imagenUrlRaw) : null,
     };
   }

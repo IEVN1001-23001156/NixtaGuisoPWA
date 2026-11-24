@@ -1,67 +1,141 @@
 <div class="min-h-screen bg-crema pb-24">
   <app-barra-superior (abrirMenu)="menuAbierto = true" />
 
-  <div class="max-w-4xl mx-auto px-5 lg:px-6 pt-6 lg:pt-10">
-    <div class="rounded-[2rem] overflow-hidden shadow-xl border border-cacao/10 bg-crema lg:grid lg:grid-cols-12">
-      <div class="bg-maiz px-6 pt-7 pb-8 lg:col-span-5 lg:p-10 lg:flex lg:flex-col lg:justify-between">
-        <div>
-          <a
-            routerLink="/checkout/entrega"
-            class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-white text-maiz shadow-sm hover:scale-105 transition mb-5"
-            aria-label="Volver a dirección de entrega"
-          >
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
-            </svg>
-          </a>
-
-          <h1 class="text-2xl lg:text-3xl font-extrabold text-white tracking-tight">Método de Pago</h1>
-          <p class="text-xs lg:text-sm text-white/90 mt-2">
-            Solo se acepta pago con tarjeta.
-          </p>
-        </div>
-
-        @if (carritoService.total() > 0) {
-          <div class="mt-6 p-4 rounded-2xl bg-white/15 text-white">
-            <span class="block text-xs font-bold opacity-85">Total a pagar</span>
-            <span class="text-2xl font-black">${{ carritoService.total() }} MXN</span>
-          </div>
-        }
+  <div class="max-w-3xl mx-auto px-4 sm:px-6 pt-6 lg:pt-8">
+    <header class="bg-maiz px-5 pt-6 pb-7 rounded-t-[2rem] shadow-sm flex items-center gap-3">
+      <a
+        routerLink="/checkout/entrega"
+        class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-white text-maiz shadow-sm hover:scale-105 transition shrink-0"
+        aria-label="Volver a entrega"
+      >
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+        </svg>
+      </a>
+      <div>
+        <h1 class="text-xl lg:text-3xl font-extrabold text-cacao">Método de Pago</h1>
+        <p class="text-xs text-cacao/80 font-semibold">Agrega tu tarjeta para confirmar tu pedido</p>
       </div>
+    </header>
 
-      <div class="px-6 pt-7 pb-9 lg:col-span-7 lg:p-10 lg:flex lg:flex-col lg:justify-center">
-        <div class="space-y-4 max-w-lg w-full mx-auto">
-          <button
-            type="button"
-            (click)="metodoSeleccionado = 'tarjeta'"
-            class="w-full p-4 rounded-2xl bg-white border-2 border-milpa text-left flex items-center justify-between transition cursor-pointer"
-          >
-            <div>
-              <p class="text-sm lg:text-base font-extrabold text-cacao">Tarjeta</p>
-              <p class="text-xs text-cacao/65">Pago con tarjeta de débito o crédito</p>
+    <main class="px-4 sm:px-6 lg:px-8 pt-6 bg-white rounded-b-[2rem] pb-8 shadow-xl border border-cacao/10 space-y-6">
+      <form (submit)="confirmarPago($event)" class="space-y-5">
+        <div class="p-5 rounded-3xl bg-crema border border-cacao/10 space-y-5">
+          <div class="rounded-2xl bg-cacao text-crema p-5 shadow-md space-y-5">
+            <div class="flex items-center justify-between gap-2">
+              <span class="text-[11px] uppercase tracking-wider font-bold text-maiz">
+                Tarjeta Simulada · Prueba
+              </span>
+              <span class="text-xs font-extrabold bg-white/15 px-2.5 py-0.5 rounded-full">
+                {{ marcaTarjeta }}
+              </span>
             </div>
-            <span class="w-5 h-5 rounded-full border-2 border-milpa flex items-center justify-center">
-              <span class="w-2.5 h-2.5 rounded-full bg-milpa"></span>
-            </span>
-          </button>
 
-          @if (errorMensaje()) {
-            <p class="text-xs font-bold text-salsa px-1">{{ errorMensaje() }}</p>
-          }
+            <p class="text-lg sm:text-xl font-extrabold tracking-widest font-mono">
+              {{ numeroTarjeta || '•••• •••• •••• ••••' }}
+            </p>
 
-          <div class="pt-4">
-            <button
-              type="button"
-              [disabled]="enviando()"
-              (click)="confirmarPedido()"
-              class="w-full py-4 rounded-full bg-milpa text-white font-bold text-base lg:text-lg shadow-md hover:bg-milpa/90 disabled:opacity-60 transition cursor-pointer"
-            >
-              {{ enviando() ? 'Registrando pedido...' : 'Confirmar pedido' }}
-            </button>
+            <div class="flex items-end justify-between gap-4 text-xs">
+              <div class="min-w-0">
+                <p class="text-[10px] uppercase text-crema/65">Titular</p>
+                <p class="font-bold truncate">{{ titular || 'NOMBRE DEL TITULAR' }}</p>
+              </div>
+              <div class="text-right shrink-0">
+                <p class="text-[10px] uppercase text-crema/65">Vigencia</p>
+                <p class="font-bold">{{ vencimiento || 'MM/AA' }}</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="space-y-4">
+            <div>
+              <label class="block text-xs font-extrabold text-cacao mb-1">
+                Nombre en la tarjeta
+              </label>
+              <input
+                type="text"
+                [(ngModel)]="titular"
+                name="titular"
+                required
+                class="w-full px-3.5 py-2.5 rounded-xl bg-white text-cacao text-sm font-semibold border border-cacao/15 focus:outline-none focus:ring-2 focus:ring-maiz"
+              />
+            </div>
+
+            <div>
+              <label class="block text-xs font-extrabold text-cacao mb-1">
+                Número de tarjeta
+              </label>
+              <input
+                type="text"
+                inputmode="numeric"
+                maxlength="19"
+                [ngModel]="numeroTarjeta"
+                (ngModelChange)="onNumeroTarjetaChange($event)"
+                name="numeroTarjeta"
+                placeholder="4111 2222 3333 4444"
+                required
+                class="w-full px-3.5 py-2.5 rounded-xl bg-white text-cacao text-sm font-semibold tracking-wider border border-cacao/15 focus:outline-none focus:ring-2 focus:ring-maiz"
+              />
+            </div>
+
+            <div class="grid grid-cols-2 gap-3.5">
+              <div>
+                <label class="block text-xs font-extrabold text-cacao mb-1">
+                  Vencimiento (MM/AA)
+                </label>
+                <input
+                  type="text"
+                  inputmode="numeric"
+                  maxlength="5"
+                  [ngModel]="vencimiento"
+                  (ngModelChange)="onVencimientoChange($event)"
+                  name="vencimiento"
+                  placeholder="12/28"
+                  required
+                  class="w-full px-3.5 py-2.5 rounded-xl bg-white text-cacao text-sm font-semibold border border-cacao/15 focus:outline-none focus:ring-2 focus:ring-maiz"
+                />
+              </div>
+
+              <div>
+                <label class="block text-xs font-extrabold text-cacao mb-1">
+                  CVV
+                </label>
+                <input
+                  type="password"
+                  inputmode="numeric"
+                  maxlength="4"
+                  [ngModel]="cvv"
+                  (ngModelChange)="onCvvChange($event)"
+                  name="cvv"
+                  placeholder="123"
+                  required
+                  class="w-full px-3.5 py-2.5 rounded-xl bg-white text-cacao text-sm font-semibold border border-cacao/15 focus:outline-none focus:ring-2 focus:ring-maiz"
+                />
+              </div>
+            </div>
           </div>
         </div>
-      </div>
-    </div>
+
+        @if (errorMensaje()) {
+          <p class="text-xs font-bold text-salsa px-1">{{ errorMensaje() }}</p>
+        }
+
+        <div class="p-4 rounded-2xl bg-crema border border-cacao/10 flex items-center justify-between gap-4">
+          <div>
+            <p class="text-xs font-bold text-cacao/70">Total a pagar</p>
+            <p class="text-xl font-black text-cacao">${{ carritoService.total() | number:'1.2-2' }} MXN</p>
+          </div>
+
+          <button
+            type="submit"
+            [disabled]="procesando() || carritoService.items().length === 0"
+            class="px-6 py-3 rounded-full bg-milpa text-white text-xs sm:text-sm font-extrabold shadow-md hover:bg-milpa/90 disabled:opacity-60 transition cursor-pointer whitespace-nowrap"
+          >
+            {{ procesando() ? 'Procesando...' : 'Confirmar pedido' }}
+          </button>
+        </div>
+      </form>
+    </main>
   </div>
 
   <app-menu-lateral [abierto]="menuAbierto" (cerrar)="menuAbierto = false" />

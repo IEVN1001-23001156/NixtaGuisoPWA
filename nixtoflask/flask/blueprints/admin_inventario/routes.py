@@ -333,6 +333,88 @@ def listar_recetas():
             cursor.close()
 
 
+@admin_inventario_bp.route('/api/admin/recetas', methods=['POST'])
+@admin_requerido
+def crear_receta():
+    cursor = None
+
+    try:
+        datos = request.get_json(silent=True) or {}
+        nombre = texto(datos, 'nombre', 'Nombre de la receta', minimo=2, maximo=120)
+        rendimiento = numero(datos, 'rendimiento', 'Rendimiento', permitir_cero=False)
+        costo_lote = numero(datos, 'costo_lote', 'Costo por lote') if datos.get('costo_lote') not in (None, '') else 0.0
+        insumos_receta = datos.get('insumos')
+
+        try:
+            id_producto = int(datos.get('id_producto'))
+        except (TypeError, ValueError):
+            raise ErrorValidacion('Selecciona un producto válido')
+
+        if not isinstance(insumos_receta, list) or len(insumos_receta) == 0:
+            raise ErrorValidacion('Agrega al menos un insumo a la receta')
+
+        cursor = mysql.connection.cursor()
+        cursor.execute("SELECT 1 FROM productos WHERE id_producto = %s AND activo = TRUE", (id_producto,))
+        if not cursor.fetchone():
+            raise ErrorValidacion('El producto seleccionado no existe', 404)
+
+        filas_insumos = []
+        ids_vistos = set()
+        for item in insumos_receta:
+            if not isinstance(item, dict):
+                raise ErrorValidacion('Formato de insumo inválido')
+            try:
+                id_insumo = int(item.get('id_insumo'))
+                cantidad = float(item.get('cantidad'))
+            except (TypeError, ValueError):
+                raise ErrorValidacion('Verifica el insumo y la cantidad')
+
+            if id_insumo <= 0 or cantidad <= 0:
+                raise ErrorValidacion('Cada insumo debe tener cantidad mayor a cero')
+            if id_insumo in ids_vistos:
+                raise ErrorValidacion('No repitas el mismo insumo en la receta')
+            ids_vistos.add(id_insumo)
+
+            cursor.execute("SELECT 1 FROM insumos WHERE id_insumo = %s AND activo = TRUE", (id_insumo,))
+            if not cursor.fetchone():
+                raise ErrorValidacion('Uno de los insumos no existe o está inactivo', 404)
+
+            filas_insumos.append((id_insumo, cantidad))
+
+        cursor.execute("""
+            INSERT INTO recetas (id_producto, nombre, rendimiento, costo_lote)
+            VALUES (%s, %s, %s, %s)
+        """, (id_producto, nombre, rendimiento, costo_lote))
+        id_receta = cursor.lastrowid
+
+        for id_insumo, cantidad in filas_insumos:
+            cursor.execute("""
+                INSERT INTO receta_insumos (id_receta, id_insumo, cantidad)
+                VALUES (%s, %s, %s)
+            """, (id_receta, id_insumo, cantidad))
+
+        mysql.connection.commit()
+
+        return jsonify({
+            'exito': True,
+            'mensaje': 'Receta creada correctamente',
+            'id_receta': id_receta
+        }), 201
+
+    except ErrorValidacion as e:
+        mysql.connection.rollback()
+        return jsonify({'exito': False, 'mensaje': e.mensaje}), e.codigo
+
+    except Exception as e:
+        print("ERROR AL CREAR RECETA:", str(e))
+        mysql.connection.rollback()
+        return jsonify({'exito': False, 'mensaje': 'No se pudo crear la receta'}), 500
+
+    finally:
+        if cursor:
+            cursor.close()
+
+
 @admin_inventario_bp.route('/api/admin/producciones', methods=['POST'])
 @admin_requerido
 def crear_produccion():

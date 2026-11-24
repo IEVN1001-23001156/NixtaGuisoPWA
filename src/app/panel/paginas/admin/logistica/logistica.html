@@ -62,7 +62,7 @@
                     <button (click)="cambiarEstado(p, 'entregado')" [disabled]="procesando() === p.id_pedido" class="w-full btn-verde btn-chico">Marcar entregado</button>
                   }
                   @if (p.estado !== 'entregado' && p.estado !== 'cancelado') {
-                    <button (click)="cambiarEstado(p, 'cancelado')" class="w-full text-xs font-bold text-red-600 hover:underline">Cancelar pedido</button>
+                    <button type="button" (click)="solicitarCancelacion(p)" class="w-full text-xs font-bold text-red-600 hover:underline">Cancelar pedido</button>
                   }
                 </div>
               </article>
@@ -90,6 +90,77 @@
           </ul>
         </div>
       </section>
+    }
+
+    <!-- Modal de motivo de cancelación -->
+    @if (pedidoACancelar(); as pc) {
+      <div class="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+        <div class="tarjeta max-w-md w-full space-y-4 bg-white">
+          <div class="flex items-center justify-between">
+            <h2 class="titulo-seccion">Motivo de cancelación · {{ folio(pc.id_pedido) }}</h2>
+            <button type="button" (click)="cerrarModalCancelacion()" aria-label="Cerrar">
+              <span class="material-symbols-rounded">close</span>
+            </button>
+          </div>
+
+          <p class="text-xs opacity-75">
+            Selecciona el motivo para cancelar el pedido de <strong>{{ pc.cliente }}</strong> e informar al usuario:
+          </p>
+
+          <div class="space-y-2 text-sm">
+            @for (op of motivosCancelacion; track op) {
+              <label class="flex items-center gap-2.5 p-2.5 rounded-2xl border border-nixta-cafe/15 cursor-pointer hover:bg-nixta-crema/60">
+                <input
+                  type="radio"
+                  name="motivoCancelacion"
+                  [value]="op"
+                  [(ngModel)]="motivoSeleccionado"
+                  class="accent-nixta-verde"
+                />
+                <span>{{ op }}</span>
+              </label>
+            }
+
+            <label class="flex items-center gap-2.5 p-2.5 rounded-2xl border border-nixta-cafe/15 cursor-pointer hover:bg-nixta-crema/60">
+              <input
+                type="radio"
+                name="motivoCancelacion"
+                value="otro"
+                [(ngModel)]="motivoSeleccionado"
+                class="accent-nixta-verde"
+              />
+              <span>Otro</span>
+            </label>
+          </div>
+
+          @if (motivoSeleccionado === 'otro') {
+            <div>
+              <label class="etiqueta">Especifica otro motivo</label>
+              <input
+                type="text"
+                class="campo-gris"
+                [(ngModel)]="motivoOtro"
+                name="motivoOtro"
+                placeholder="Escribe el motivo de la cancelación..."
+              />
+            </div>
+          }
+
+          <div class="grid grid-cols-2 gap-2 pt-2">
+            <button type="button" (click)="cerrarModalCancelacion()" class="btn-borde btn-chico">
+              Cancelar
+            </button>
+            <button
+              type="button"
+              (click)="confirmarCancelacion()"
+              [disabled]="!motivoFinal() || procesando() === pc.id_pedido"
+              class="btn btn-chico bg-red-600 text-white disabled:opacity-50"
+            >
+              Confirmar cancelación
+            </button>
+          </div>
+        </div>
+      </div>
     }
   }
   @case ('programados') {

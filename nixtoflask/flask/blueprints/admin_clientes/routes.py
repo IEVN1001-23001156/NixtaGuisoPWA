@@ -28,16 +28,16 @@ def listar_clientes():
     cursor = None
 
     try:
-        tipo = request.args.get('tipo', '').upper()
+        tipo = request.args.get('tipo', '').strip().upper()
         buscar = request.args.get('buscar', '').strip()
 
         consulta = """
             SELECT c.id_cliente, u.nombre, u.correo, u.telefono, u.activo,
                    u.fecha_registro, c.tipo, c.nombre_negocio, c.nivel_b2b,
                    COUNT(p.id_pedido) AS total_pedidos,
-                   COALESCE(SUM(CASE WHEN p.estado = 'entregado' THEN p.total END), 0) AS total_comprado,
+                   COALESCE(SUM(CASE WHEN p.estado = 'entregado' THEN p.total ELSE 0 END), 0) AS total_comprado,
                    MAX(p.fecha_pedido) AS ultimo_pedido,
-                   COALESCE(SUM(p.fecha_pedido >= NOW() - INTERVAL 30 DAY), 0) AS pedidos_30_dias
+                   COALESCE(SUM(CASE WHEN p.fecha_pedido >= NOW() - INTERVAL 30 DAY THEN 1 ELSE 0 END), 0) AS pedidos_30_dias
             FROM clientes c
             JOIN usuarios u ON u.id_usuario = c.id_usuario
             LEFT JOIN pedidos p ON p.id_cliente = c.id_cliente AND p.estado <> 'cancelado'
@@ -76,11 +76,11 @@ def listar_clientes():
             'tipo': f['tipo'],
             'nivel_b2b': f['nivel_b2b'],
             'activo': bool(f['activo']),
-            'fecha_registro': f['fecha_registro'].strftime('%Y-%m-%d'),
-            'total_pedidos': f['total_pedidos'],
-            'total_comprado': float(f['total_comprado']),
+            'fecha_registro': f['fecha_registro'].strftime('%Y-%m-%d') if f['fecha_registro'] else None,
+            'total_pedidos': int(f['total_pedidos'] or 0),
+            'total_comprado': float(f['total_comprado'] or 0),
             'ultimo_pedido': f['ultimo_pedido'].strftime('%Y-%m-%d') if f['ultimo_pedido'] else None,
-            'frecuencia': frecuencia(int(f['pedidos_30_dias']))
+            'frecuencia': frecuencia(int(f['pedidos_30_dias'] or 0))
         } for f in cursor.fetchall()]
 
         return jsonify({'exito': True, 'total': len(clientes), 'clientes': clientes}), 200
@@ -127,10 +127,10 @@ def ficha_cliente(id_cliente):
         """, (id_cliente,))
         historial = [{
             'id_pedido': p['id_pedido'],
-            'fecha_pedido': p['fecha_pedido'].strftime('%Y-%m-%d %H:%M'),
+            'fecha_pedido': p['fecha_pedido'].strftime('%Y-%m-%d %H:%M') if p['fecha_pedido'] else None,
             'estado': p['estado'],
             'estado_pago': p['estado_pago'],
-            'total': float(p['total'])
+            'total': float(p['total'] or 0)
         } for p in cursor.fetchall()]
 
         cursor.execute("""
@@ -155,7 +155,7 @@ def ficha_cliente(id_cliente):
                 'correo': c['correo'],
                 'telefono': c['telefono'],
                 'activo': bool(c['activo']),
-                'fecha_registro': c['fecha_registro'].strftime('%Y-%m-%d'),
+                'fecha_registro': c['fecha_registro'].strftime('%Y-%m-%d') if c['fecha_registro'] else None,
                 'tipo': c['tipo'],
                 'nombre_negocio': c['nombre_negocio'],
                 'rfc': c['rfc'],
@@ -164,11 +164,11 @@ def ficha_cliente(id_cliente):
                 'latitud': a_numero(c['latitud']),
                 'longitud': a_numero(c['longitud']),
                 'preferencias': c['preferencias'],
-                'saldo_favor': float(c['saldo_favor']),
+                'saldo_favor': float(c['saldo_favor'] or 0),
                 'codigo_referido': c['codigo_referido'],
                 'referido_por': c['referido_por'],
-                'invitados': extra['invitados'],
-                'programaciones_activas': extra['programaciones_activas'],
+                'invitados': int(extra['invitados'] or 0),
+                'programaciones_activas': int(extra['programaciones_activas'] or 0),
                 'calificacion_promedio': float(extra['calificacion_promedio']) if extra['calificacion_promedio'] else None,
                 'historial': historial
             }

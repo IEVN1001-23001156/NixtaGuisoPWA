@@ -33,6 +33,23 @@ export class LogisticaAdmin implements OnInit {
   hoy = hoyLocal();
   fecha = signal(hoyLocal());   // día que se consulta en Entregados y Cancelados
 
+  // Cancelación con motivo
+  pedidoACancelar = signal<PedidoAdmin | null>(null);
+  motivosCancelacion = [
+    'No hay repartidores disponibles',
+    'Ruta lejana',
+    'Falta de existencia o insumos',
+  ];
+  motivoSeleccionado = this.motivosCancelacion[0];
+  motivoOtro = '';
+
+  motivoFinal = computed(() => {
+    if (this.motivoSeleccionado === 'otro') {
+      return this.motivoOtro.trim();
+    }
+    return this.motivoSeleccionado.trim();
+  });
+
   columnas: { estado: EstadoPedido; titulo: string; color: string }[] = [
     { estado: 'pendiente', titulo: 'Pendiente', color: 'bg-nixta-amarillo' },
     { estado: 'preparando', titulo: 'Preparando', color: 'bg-nixta-naranja' },
@@ -81,10 +98,42 @@ export class LogisticaAdmin implements OnInit {
     };
   }
 
-  cambiarEstado(p: { id_pedido: number }, estado: EstadoPedido): void {
-    if (estado === 'cancelado' && !confirm('¿Cancelar este pedido? Se regresan el inventario y el saldo.')) return;
+  solicitarCancelacion(p: PedidoAdmin): void {
+    if (!confirm('¿Cancelar este pedido? Se regresan el inventario y el saldo.')) return;
+    this.motivoSeleccionado = this.motivosCancelacion[0];
+    this.motivoOtro = '';
+    this.pedidoACancelar.set(p);
+  }
+
+  cerrarModalCancelacion(): void {
+    this.pedidoACancelar.set(null);
+    this.motivoOtro = '';
+  }
+
+  confirmarCancelacion(): void {
+    const pedido = this.pedidoACancelar();
+    const motivo = this.motivoFinal();
+    if (!pedido || !motivo) return;
+
+    this.procesando.set(pedido.id_pedido);
+    this.admin.cambiarEstado(pedido.id_pedido, 'cancelado', motivo).subscribe({
+      next: (r: any) => {
+        this.cerrarModalCancelacion();
+        this.hecho(pedido.id_pedido, r.mensaje ?? `Pedido cancelado (${motivo})`).next(r);
+      },
+      error: (err: any) => {
+        this.hecho(pedido.id_pedido).error(err);
+      }
+    });
+  }
+
+  cambiarEstado(p: { id_pedido: number }, estado: EstadoPedido, motivo?: string): void {
+    if (estado === 'cancelado' && !motivo) {
+      this.solicitarCancelacion(p as PedidoAdmin);
+      return;
+    }
     this.procesando.set(p.id_pedido);
-    this.admin.cambiarEstado(p.id_pedido, estado).subscribe(this.hecho(p.id_pedido));
+    this.admin.cambiarEstado(p.id_pedido, estado, motivo).subscribe(this.hecho(p.id_pedido));
   }
 
   pago(p: { id_pedido: number }, accion: 'validar' | 'rechazar'): void {

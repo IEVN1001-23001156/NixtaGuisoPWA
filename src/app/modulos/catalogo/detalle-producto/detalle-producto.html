@@ -42,7 +42,7 @@
               {{ producto().nombre }}
             </h1>
             <p class="text-2xl lg:text-3xl font-black text-salsa mt-2">
-              ${{ producto().precio * cantidad }} MXN
+              ${{ redondear(producto().precio * cantidad) | number:'1.0-2' }} MXN
             </p>
 
             <p class="text-sm lg:text-base text-cacao/80 mt-4 leading-relaxed">
@@ -50,7 +50,6 @@
             </p>
 
             @if (producto().esPaquete) {
-              <!-- Elige la salsa y el agua de tu paquete (el precio no cambia) -->
               <div class="mt-6 grid gap-4 sm:grid-cols-2">
                 <div>
                   <label class="block text-xs lg:text-sm font-bold text-cacao mb-2">Salsa</label>
@@ -75,20 +74,31 @@
             }
 
             <div class="mt-6">
-              <label class="block text-xs lg:text-sm font-bold text-cacao mb-2">Cantidad</label>
-              <div class="inline-flex items-center gap-4 bg-white lg:bg-crema px-4 py-2 rounded-full border border-cacao/15">
+              <label for="cantidadDetalle" class="block text-xs lg:text-sm font-bold text-cacao mb-2">
+                Cantidad
+              </label>
+              <div class="inline-flex items-center gap-3 bg-white lg:bg-crema px-3.5 py-2 rounded-full border border-cacao/15">
                 <button
                   type="button"
-                  (click)="cambiarCantidad(-1)"
-                  class="w-8 h-8 rounded-full bg-crema lg:bg-white text-cacao font-extrabold text-lg flex items-center justify-center hover:bg-maiz/30 transition cursor-pointer"
+                  (click)="cambiarCantidad(-pasoCantidad)"
+                  class="w-8 h-8 rounded-full bg-crema lg:bg-white text-cacao font-extrabold text-lg flex items-center justify-center hover:bg-maiz/30 transition cursor-pointer shrink-0"
                 >
                   -
                 </button>
-                <span class="text-base lg:text-lg font-black text-cacao min-w-6 text-center">{{ cantidad }}</span>
+                <input
+                  id="cantidadDetalle"
+                  type="number"
+                  [min]="minimoCantidad"
+                  [step]="pasoCantidad"
+                  [ngModel]="cantidad"
+                  (ngModelChange)="onCantidadInput($event)"
+                  (blur)="normalizarCantidadAlSalir()"
+                  class="w-20 text-center text-base lg:text-lg font-black text-cacao bg-transparent focus:outline-none focus:ring-2 focus:ring-maiz rounded-lg [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                />
                 <button
                   type="button"
-                  (click)="cambiarCantidad(1)"
-                  class="w-8 h-8 rounded-full bg-crema lg:bg-white text-cacao font-extrabold text-lg flex items-center justify-center hover:bg-maiz/30 transition cursor-pointer"
+                  (click)="cambiarCantidad(pasoCantidad)"
+                  class="w-8 h-8 rounded-full bg-crema lg:bg-white text-cacao font-extrabold text-lg flex items-center justify-center hover:bg-maiz/30 transition cursor-pointer shrink-0"
                 >
                   +
                 </button>
@@ -107,13 +117,25 @@
           </div>
 
           <div class="pt-7">
+            @if (errorStock()) {
+              <p class="mb-3 rounded-2xl bg-red-50 border border-red-200 px-4 py-2.5 text-xs font-bold text-red-700">
+                {{ errorStock() }}
+              </p>
+            }
+
             <button
               type="button"
               (click)="agregarAlCarrito()"
-              [disabled]="producto().agotado"
-              class="w-full py-4 rounded-full bg-milpa text-white font-bold text-base lg:text-lg shadow-md hover:bg-milpa/90 active:scale-[0.99] transition cursor-pointer"
+              [disabled]="producto().agotado || validandoStock()"
+              class="w-full py-4 rounded-full bg-milpa text-white font-bold text-base lg:text-lg shadow-md hover:bg-milpa/90 active:scale-[0.99] disabled:opacity-60 transition cursor-pointer"
             >
-              {{ producto().agotado ? 'Agotado por hoy' : 'Agregar al carrito · $' + (producto().precio * cantidad) + ' MXN' }}
+              @if (producto().agotado) {
+                Agotado por hoy
+              } @else if (validandoStock()) {
+                Verificando existencia...
+              } @else {
+                Agregar al carrito · ${{ redondear(producto().precio * cantidad) | number:'1.0-2' }} MXN
+              }
             </button>
           </div>
         </div>

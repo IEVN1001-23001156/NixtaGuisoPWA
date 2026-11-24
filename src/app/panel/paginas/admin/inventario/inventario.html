@@ -1,10 +1,15 @@
 <div class="flex flex-wrap items-end justify-between gap-3">
-  <div><h1 class="text-3xl lg:text-4xl font-extrabold">Inventario y producción</h1><p class="text-sm opacity-70">Stock, compras, lotes y mermas de la cocina</p></div>
+  <div>
+    <h1 class="text-3xl lg:text-4xl font-extrabold">Inventario y producción</h1>
+    <p class="text-sm opacity-70">Stock, compras, lotes y mermas de la cocina</p>
+  </div>
   <div class="flex flex-wrap gap-2">
     @for (t of [['stock','Stock actual','inventory'],['compras','Compras','shopping_bag'],['produccion','Producción','soup_kitchen'],['mermas','Mermas','delete_sweep']]; track t[0]) {
       <button (click)="pestana.set($any(t[0]))" class="btn btn-chico shadow-sm" [class]="pestana() === t[0] ? 'bg-nixta-verde text-white' : 'bg-white'">
         <span class="material-symbols-rounded text-lg">{{ t[2] }}</span> {{ t[1] }}
-        @if (t[0] === 'stock' && porSurtir() > 0) { <span class="chip bg-nixta-amarillo text-nixta-cafe">{{ porSurtir() }}</span> }
+        @if (t[0] === 'stock' && porSurtir() > 0) {
+          <span class="chip bg-nixta-amarillo text-nixta-cafe">{{ porSurtir() }}</span>
+        }
       </button>
     }
   </div>
@@ -25,16 +30,34 @@
             </div>
           </div>
           <table class="tabla mt-3">
-            <thead><tr><th>Insumo</th><th class="text-right">Existencia</th><th class="text-right">Mínimo</th><th class="w-36">Nivel</th><th class="text-right">Costo</th><th>Estado</th><th></th></tr></thead>
+            <thead>
+              <tr>
+                <th>Insumo</th>
+                <th class="text-right">Existencia</th>
+                <th class="text-right">Mínimo</th>
+                <th class="w-36">Nivel</th>
+                <th class="text-right">Costo</th>
+                <th>Estado</th>
+                <th></th>
+              </tr>
+            </thead>
             <tbody>
               @for (i of insumosFiltrados(); track i.id_insumo) {
                 <tr>
                   <td class="font-semibold">{{ i.nombre }}</td>
                   <td class="text-right">{{ i.existencia | number:'1.0-3' }} {{ i.unidad }}</td>
                   <td class="text-right">{{ i.stock_minimo | number:'1.0-3' }}</td>
-                  <td><div class="h-2.5 rounded-full bg-nixta-crema overflow-hidden"><div class="h-full rounded-full" [class]="i.estado === 'optimo' ? 'bg-nixta-verde' : 'bg-nixta-naranja'" [style.width.%]="nivel(i.existencia, i.stock_minimo)"></div></div></td>
+                  <td>
+                    <div class="h-2.5 rounded-full bg-nixta-crema overflow-hidden">
+                      <div class="h-full rounded-full" [class]="i.estado === 'optimo' ? 'bg-nixta-verde' : 'bg-nixta-naranja'" [style.width.%]="nivel(i.existencia, i.stock_minimo)"></div>
+                    </div>
+                  </td>
                   <td class="text-right">{{ i.costo_unitario !== null ? (i.costo_unitario | currency:'MXN':'symbol-narrow':'1.2-2') : '—' }}</td>
-                  <td><span class="chip" [class]="i.estado === 'optimo' ? 'chip bg-nixta-verde text-white' : 'chip bg-nixta-naranja text-nixta-cafe'">{{ i.estado === 'optimo' ? 'Óptimo' : 'Por surtir' }}</span></td>
+                  <td>
+                    <span class="chip" [class]="i.estado === 'optimo' ? 'chip bg-nixta-verde text-white' : 'chip bg-nixta-naranja text-nixta-cafe'">
+                      {{ i.estado === 'optimo' ? 'Óptimo' : 'Por surtir' }}
+                    </span>
+                  </td>
                   <td><button (click)="editarInsumo(i)" class="chip bg-nixta-crema hover:bg-nixta-amarillo">Editar</button></td>
                 </tr>
               }
@@ -46,14 +69,27 @@
         <div class="tarjeta overflow-x-auto">
           <h2 class="titulo-seccion">Producto terminado (listo para vender)</h2>
           <table class="tabla mt-3">
-            <thead><tr><th>Producto</th><th>Presentación</th><th class="text-right">Existencia</th><th class="w-56">Reabastecer</th><th></th></tr></thead>
+            <thead>
+              <tr>
+                <th>Producto</th>
+                <th>Presentación</th>
+                <th class="text-right">Existencia</th>
+                <th class="w-56">Reabastecer</th>
+                <th></th>
+              </tr>
+            </thead>
             <tbody>
               @for (p of terminado(); track p.id_producto) {
                 <tr [class.bg-red-50]="p.existencia <= 0">
                   <td class="font-semibold">{{ p.nombre }}</td>
                   <td>{{ p.presentacion }}</td>
                   <td class="text-right font-bold" [class.text-red-600]="p.existencia <= 0">{{ p.existencia | number:'1.0-2' }}</td>
-                  <td><div class="flex gap-2"><input type="number" min="0" step="0.5" class="campo-gris py-1 w-24" [(ngModel)]="cantidades[p.id_producto]" [name]="'c' + p.id_producto" placeholder="+0"><button (click)="reabastecer(p)" class="btn-verde btn-chico">Sumar</button></div></td>
+                  <td>
+                    <div class="flex gap-2">
+                      <input type="number" min="0" step="0.5" class="campo-gris py-1 w-24" [(ngModel)]="cantidades[p.id_producto]" [name]="'c' + p.id_producto" placeholder="+0">
+                      <button (click)="reabastecer(p)" class="btn-verde btn-chico">Sumar</button>
+                    </div>
+                  </td>
                   <td><button (click)="ajustar(p)" class="chip bg-nixta-crema hover:bg-nixta-amarillo">Ajustar conteo</button></td>
                 </tr>
               }
@@ -71,12 +107,21 @@
           <p class="text-xs opacity-70">Unidad: {{ ie.unidad }}</p>
           <label><span class="etiqueta">Stock mínimo</span><input class="campo-gris" type="number" [(ngModel)]="ie.stock_minimo" name="eminimo"></label>
           <label><span class="etiqueta">Costo unitario</span><input class="campo-gris" type="number" step="0.01" [(ngModel)]="ie.costo_unitario" name="ecosto"></label>
-          <label class="flex items-center gap-2 text-sm font-semibold"><input type="checkbox" [(ngModel)]="ie.activo" name="eactivo" class="w-4 h-4 accent-nixta-verde"> Activo (desmarcar para darlo de baja)</label>
-          <div class="grid grid-cols-2 gap-2"><button (click)="insumoEditado.set(null)" class="btn-borde btn-chico">Cancelar</button><button (click)="guardarInsumo()" class="btn-verde btn-chico">Guardar</button></div>
+          <label class="flex items-center gap-2 text-sm font-semibold">
+            <input type="checkbox" [(ngModel)]="ie.activo" name="eactivo" class="w-4 h-4 accent-nixta-verde"> Activo (desmarcar para darlo de baja)
+          </label>
+          <div class="grid grid-cols-2 gap-2">
+            <button (click)="insumoEditado.set(null)" class="btn-borde btn-chico">Cancelar</button>
+            <button (click)="guardarInsumo()" class="btn-verde btn-chico">Guardar</button>
+          </div>
         } @else {
           <h2 class="titulo-seccion">Nuevo insumo</h2>
           <input class="campo-gris" [(ngModel)]="nuevoInsumo.nombre" name="nombre" placeholder="Nombre">
-          <select class="campo-gris" [(ngModel)]="nuevoInsumo.unidad" name="unidad"><option value="kg">kg</option><option value="L">L</option><option value="pieza">pieza</option></select>
+          <select class="campo-gris" [(ngModel)]="nuevoInsumo.unidad" name="unidad">
+            <option value="kg">kg</option>
+            <option value="L">L</option>
+            <option value="pieza">pieza</option>
+          </select>
           <input class="campo-gris" type="number" [(ngModel)]="nuevoInsumo.stock_minimo" name="minimo" placeholder="Stock mínimo">
           <input class="campo-gris" type="number" step="0.01" [(ngModel)]="nuevoInsumo.costo_unitario" name="costo" placeholder="Costo unitario (opcional)">
           <button (click)="crearInsumo()" class="btn-verde" [disabled]="!nuevoInsumo.nombre">Agregar insumo</button>
@@ -90,7 +135,12 @@
     <section class="mt-5 grid gap-5 xl:grid-cols-[340px_1fr] items-start">
       <div class="tarjeta grid gap-3">
         <h2 class="titulo-seccion">Registrar compra</h2>
-        <select class="campo-gris" [(ngModel)]="compra.id_insumo" name="insumo"><option [ngValue]="0" disabled>Elige el insumo</option>@for (i of insumos(); track i.id_insumo) {<option [ngValue]="i.id_insumo">{{ i.nombre }} ({{ i.unidad }})</option>}</select>
+        <select class="campo-gris" [(ngModel)]="compra.id_insumo" name="insumo">
+          <option [ngValue]="0" disabled>Elige el insumo</option>
+          @for (i of insumos(); track i.id_insumo) {
+            <option [ngValue]="i.id_insumo">{{ i.nombre }} ({{ i.unidad }})</option>
+          }
+        </select>
         <input class="campo-gris" type="number" step="0.001" [(ngModel)]="compra.cantidad" name="cantidad" placeholder="Cantidad">
         <input class="campo-gris" type="number" step="0.01" [(ngModel)]="compra.costo_total" name="costo" placeholder="Costo total pagado">
         <input class="campo-gris" [(ngModel)]="compra.proveedor" name="proveedor" placeholder="Proveedor (opcional)">
@@ -99,9 +149,32 @@
       </div>
       <div class="tarjeta overflow-x-auto">
         <h2 class="titulo-seccion">Historial de compras</h2>
-        <table class="tabla mt-3"><thead><tr><th>Fecha</th><th>Insumo</th><th class="text-right">Cantidad</th><th class="text-right">Costo</th><th>Proveedor</th><th></th></tr></thead>
-          <tbody>@for (c of compras(); track c.id_compra) {<tr><td class="text-xs">{{ c.fecha }}</td><td>{{ c.insumo }}</td><td class="text-right">{{ c.cantidad | number:'1.0-3' }} {{ c.unidad }}</td><td class="text-right">{{ c.costo_total | currency:'MXN':'symbol-narrow':'1.2-2' }}</td><td>{{ c.proveedor ?? '—' }}</td><td><button (click)="anular('compra', c.id_compra)" class="chip bg-red-50 text-red-700">Anular</button></td></tr>}
-            @empty {<tr><td colspan="6" class="text-center opacity-60">Sin compras</td></tr>}</tbody></table>
+        <table class="tabla mt-3">
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Insumo</th>
+              <th class="text-right">Cantidad</th>
+              <th class="text-right">Costo</th>
+              <th>Proveedor</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (c of compras(); track c.id_compra) {
+              <tr>
+                <td class="text-xs">{{ c.fecha }}</td>
+                <td>{{ c.insumo }}</td>
+                <td class="text-right">{{ c.cantidad | number:'1.0-3' }} {{ c.unidad }}</td>
+                <td class="text-right">{{ c.costo_total | currency:'MXN':'symbol-narrow':'1.2-2' }}</td>
+                <td>{{ c.proveedor ?? '—' }}</td>
+                <td><button (click)="anular('compra', c.id_compra)" class="chip bg-red-50 text-red-700">Anular</button></td>
+              </tr>
+            } @empty {
+              <tr><td colspan="6" class="text-center opacity-60">Sin compras</td></tr>
+            }
+          </tbody>
+        </table>
       </div>
     </section>
   }
@@ -109,19 +182,84 @@
   @case ('produccion') {
     <section class="mt-5 grid gap-5 xl:grid-cols-[360px_1fr] items-start">
       <div class="space-y-5">
+        <!-- Registrar lote producido -->
         <div class="tarjeta grid gap-3">
           <h2 class="titulo-seccion">Registrar lote producido</h2>
-          <select class="campo-gris" [(ngModel)]="produccion.id_receta" name="receta"><option [ngValue]="0" disabled>Elige el producto</option>@for (r of recetas(); track r.id_receta) {<option [ngValue]="r.id_receta">{{ r.producto }} · {{ r.presentacion }}</option>}</select>
+          <select class="campo-gris" [(ngModel)]="produccion.id_receta" name="receta">
+            <option [ngValue]="0" disabled>Elige el producto</option>
+            @for (r of recetas(); track r.id_receta) {
+              <option [ngValue]="r.id_receta">{{ r.producto }} · {{ r.presentacion }}</option>
+            }
+          </select>
           @if (recetaElegida(); as r) {
             <div class="rounded-2xl bg-nixta-crema p-3 text-sm">
               <p>1 lote = <strong>{{ r.rendimiento }}</strong> ({{ r.presentacion }}) · {{ r.costo_lote | currency:'MXN':'symbol-narrow':'1.2-2' }}</p>
               <p class="mt-1" [class.text-red-600]="r.lotes_posibles < produccion.num_lotes">Alcanza para {{ r.lotes_posibles }} lote(s)</p>
-              <ul class="mt-2 text-xs opacity-80">@for (i of r.insumos; track i.nombre) {<li>{{ i.nombre }}: {{ i.cantidad_por_lote * produccion.num_lotes | number:'1.0-3' }} {{ i.unidad }} (hay {{ i.existencia | number:'1.0-3' }})</li>}</ul>
+              <ul class="mt-2 text-xs opacity-80">
+                @for (i of r.insumos; track i.nombre) {
+                  <li>{{ i.nombre }}: {{ i.cantidad_por_lote * produccion.num_lotes | number:'1.0-3' }} {{ i.unidad }} (hay {{ i.existencia | number:'1.0-3' }})</li>
+                }
+              </ul>
             </div>
           }
           <input class="campo-gris" type="number" step="0.5" min="0.5" [(ngModel)]="produccion.num_lotes" name="lotes" placeholder="Número de lotes">
           <input class="campo-gris" [(ngModel)]="produccion.notas" name="notas" placeholder="Notas (opcional)">
           <button (click)="registrarProduccion()" class="btn-verde" [disabled]="!produccion.id_receta || produccion.num_lotes <= 0">Registrar producción</button>
+        </div>
+
+        <!-- Nueva receta -->
+        <div class="tarjeta grid gap-3 border-2 border-nixta-verde/40">
+          <h2 class="titulo-seccion">Nueva receta</h2>
+          <label>
+            <span class="etiqueta">Producto</span>
+            <select class="campo-gris" [(ngModel)]="nuevaReceta.id_producto" name="nrProducto">
+              <option [ngValue]="0" disabled>Elige un producto</option>
+              @for (p of productos(); track p.id_producto) {
+                <option [ngValue]="p.id_producto">{{ p.nombre }} · {{ p.presentacion }}</option>
+              }
+            </select>
+          </label>
+          <label>
+            <span class="etiqueta">Nombre de la receta</span>
+            <input class="campo-gris" [(ngModel)]="nuevaReceta.nombre" name="nrNombre" placeholder="Ej. Receta base tortilla">
+          </label>
+          <div class="grid grid-cols-2 gap-2">
+            <label>
+              <span class="etiqueta">Rinde por lote</span>
+              <input class="campo-gris" type="number" step="0.01" min="0.01" [(ngModel)]="nuevaReceta.rendimiento" name="nrRend">
+            </label>
+            <label>
+              <span class="etiqueta">Costo por lote</span>
+              <input class="campo-gris" type="number" step="0.01" min="0" [(ngModel)]="nuevaReceta.costo_lote" name="nrCosto">
+            </label>
+          </div>
+          <p class="etiqueta">Insumos por lote</p>
+          @for (ins of nuevaReceta.insumos; track $index; let idx = $index) {
+            <div class="flex gap-2 items-center">
+              <select class="campo-gris py-1.5 flex-1 min-w-0" [(ngModel)]="ins.id_insumo" [name]="'nri' + idx">
+                <option [ngValue]="0" disabled>Insumo…</option>
+                @for (x of insumos(); track x.id_insumo) {
+                  <option [ngValue]="x.id_insumo">{{ x.nombre }}</option>
+                }
+              </select>
+              <input class="campo-gris py-1.5 w-24" type="number" step="0.001" min="0.001" [(ngModel)]="ins.cantidad" [name]="'nrc' + idx" placeholder="Cant.">
+              <span class="text-xs w-10">{{ unidadInsumo(ins.id_insumo) }}</span>
+              <button type="button" (click)="quitarInsumoNuevaReceta(idx)" class="text-red-600" aria-label="Quitar insumo">
+                <span class="material-symbols-rounded">close</span>
+              </button>
+            </div>
+          }
+          <button type="button" (click)="agregarInsumoNuevaReceta()" class="btn-borde btn-chico">
+            + Agregar insumo
+          </button>
+          <button
+            type="button"
+            (click)="crearReceta()"
+            class="btn-verde"
+            [disabled]="!nuevaReceta.id_producto || !nuevaReceta.nombre.trim() || nuevaReceta.rendimiento <= 0 || guardandoReceta()"
+          >
+            {{ guardandoReceta() ? 'Guardando...' : 'Crear receta' }}
+          </button>
         </div>
 
         <!-- Editor de receta -->
@@ -136,14 +274,21 @@
             <p class="etiqueta">Insumos por lote</p>
             @for (i of re.insumos; track $index; let n = $index) {
               <div class="flex gap-2 items-center">
-                <select class="campo-gris py-1.5 flex-1 min-w-0" [(ngModel)]="i.id_insumo" [name]="'ri' + n">@for (x of insumos(); track x.id_insumo) {<option [ngValue]="x.id_insumo">{{ x.nombre }}</option>}</select>
+                <select class="campo-gris py-1.5 flex-1 min-w-0" [(ngModel)]="i.id_insumo" [name]="'ri' + n">
+                  @for (x of insumos(); track x.id_insumo) {
+                    <option [ngValue]="x.id_insumo">{{ x.nombre }}</option>
+                  }
+                </select>
                 <input class="campo-gris py-1.5 w-24" type="number" step="0.001" [(ngModel)]="i.cantidad" [name]="'rc' + n">
                 <span class="text-xs w-10">{{ unidadInsumo(i.id_insumo) }}</span>
                 <button (click)="re.insumos.splice(n, 1)" class="text-red-600" aria-label="Quitar"><span class="material-symbols-rounded">close</span></button>
               </div>
             }
             <button (click)="agregarInsumoReceta()" class="btn-borde btn-chico">+ Agregar insumo</button>
-            <div class="grid grid-cols-2 gap-2"><button (click)="recetaEditada.set(null)" class="btn-borde btn-chico">Cancelar</button><button (click)="guardarReceta()" class="btn-verde btn-chico">Guardar receta</button></div>
+            <div class="grid grid-cols-2 gap-2">
+              <button (click)="recetaEditada.set(null)" class="btn-borde btn-chico">Cancelar</button>
+              <button (click)="guardarReceta()" class="btn-verde btn-chico">Guardar receta</button>
+            </div>
           </div>
         }
       </div>
@@ -152,7 +297,10 @@
         <div class="grid gap-3 sm:grid-cols-2">
           @for (r of recetas(); track r.id_receta) {
             <div class="tarjeta p-4 text-sm">
-              <div class="flex items-start justify-between gap-2"><p class="font-bold">{{ r.producto }}</p><button (click)="editarReceta(r)" class="chip bg-nixta-crema hover:bg-nixta-amarillo">Editar receta</button></div>
+              <div class="flex items-start justify-between gap-2">
+                <p class="font-bold">{{ r.producto }}</p>
+                <button (click)="editarReceta(r)" class="chip bg-nixta-crema hover:bg-nixta-amarillo">Editar receta</button>
+              </div>
               <p class="text-xs opacity-70">{{ r.nombre }}</p>
               <p class="mt-1">Existencia: <strong>{{ r.existencia_producto | number:'1.0-2' }}</strong> · Alcanza: <strong [class.text-red-600]="r.lotes_posibles === 0">{{ r.lotes_posibles }} lote(s)</strong></p>
             </div>
@@ -160,9 +308,32 @@
         </div>
         <div class="tarjeta overflow-x-auto">
           <h2 class="titulo-seccion">Historial de producción</h2>
-          <table class="tabla mt-3"><thead><tr><th>Fecha</th><th>Producto</th><th class="text-right">Lotes</th><th class="text-right">Producido</th><th class="text-right">Costo</th><th></th></tr></thead>
-            <tbody>@for (p of producciones(); track p.id_produccion) {<tr><td class="text-xs">{{ p.fecha }}</td><td>{{ p.producto }}</td><td class="text-right">{{ p.num_lotes }}</td><td class="text-right">{{ p.cantidad_producida | number:'1.0-2' }}</td><td class="text-right">{{ p.costo | currency:'MXN':'symbol-narrow':'1.2-2' }}</td><td><button (click)="anular('produccion', p.id_produccion)" class="chip bg-red-50 text-red-700">Anular</button></td></tr>}
-              @empty {<tr><td colspan="6" class="text-center opacity-60">Sin producción registrada</td></tr>}</tbody></table>
+          <table class="tabla mt-3">
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Producto</th>
+                <th class="text-right">Lotes</th>
+                <th class="text-right">Producido</th>
+                <th class="text-right">Costo</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (p of producciones(); track p.id_produccion) {
+                <tr>
+                  <td class="text-xs">{{ p.fecha }}</td>
+                  <td>{{ p.producto }}</td>
+                  <td class="text-right">{{ p.num_lotes }}</td>
+                  <td class="text-right">{{ p.cantidad_producida | number:'1.0-2' }}</td>
+                  <td class="text-right">{{ p.costo | currency:'MXN':'symbol-narrow':'1.2-2' }}</td>
+                  <td><button (click)="anular('produccion', p.id_produccion)" class="chip bg-red-50 text-red-700">Anular</button></td>
+                </tr>
+              } @empty {
+                <tr><td colspan="6" class="text-center opacity-60">Sin producción registrada</td></tr>
+              }
+            </tbody>
+          </table>
         </div>
       </div>
     </section>
@@ -172,10 +343,21 @@
     <section class="mt-5 grid gap-5 xl:grid-cols-[340px_1fr] items-start">
       <div class="tarjeta grid gap-3">
         <h2 class="titulo-seccion">Registrar merma</h2>
-        <select class="campo-gris" [(ngModel)]="merma.tipo" name="tipo" (change)="merma.id = 0"><option value="insumo">Insumo</option><option value="producto">Producto terminado</option></select>
-        <select class="campo-gris" [(ngModel)]="merma.id" name="id"><option [ngValue]="0" disabled>Elige…</option>
-          @if (merma.tipo === 'insumo') { @for (i of insumos(); track i.id_insumo) {<option [ngValue]="i.id_insumo">{{ i.nombre }} ({{ i.unidad }})</option>} }
-          @else { @for (p of productos(); track p.id_producto) {<option [ngValue]="p.id_producto">{{ p.nombre }} ({{ p.presentacion }})</option>} }
+        <select class="campo-gris" [(ngModel)]="merma.tipo" name="tipo" (change)="merma.id = 0">
+          <option value="insumo">Insumo</option>
+          <option value="producto">Producto terminado</option>
+        </select>
+        <select class="campo-gris" [(ngModel)]="merma.id" name="id">
+          <option [ngValue]="0" disabled>Elige…</option>
+          @if (merma.tipo === 'insumo') {
+            @for (i of insumos(); track i.id_insumo) {
+              <option [ngValue]="i.id_insumo">{{ i.nombre }} ({{ i.unidad }})</option>
+            }
+          } @else {
+            @for (p of productos(); track p.id_producto) {
+              <option [ngValue]="p.id_producto">{{ p.nombre }} ({{ p.presentacion }})</option>
+            }
+          }
         </select>
         <input class="campo-gris" type="number" step="0.001" [(ngModel)]="merma.cantidad" name="cantidad" placeholder="Cantidad perdida">
         <input class="campo-gris" [(ngModel)]="merma.motivo" name="motivo" placeholder="Motivo (ej. sobrante del día)">
@@ -183,9 +365,34 @@
       </div>
       <div class="tarjeta overflow-x-auto">
         <h2 class="titulo-seccion">Mermas del mes · {{ costoMermas() | currency:'MXN':'symbol-narrow':'1.2-2' }}</h2>
-        <table class="tabla mt-3"><thead><tr><th>Fecha</th><th>Tipo</th><th>Nombre</th><th class="text-right">Cantidad</th><th>Motivo</th><th class="text-right">Costo</th><th></th></tr></thead>
-          <tbody>@for (m of mermas(); track m.id_merma) {<tr><td class="text-xs">{{ m.fecha }}</td><td>{{ m.tipo }}</td><td>{{ m.nombre }}</td><td class="text-right">{{ m.cantidad | number:'1.0-3' }} {{ m.unidad }}</td><td>{{ m.motivo }}</td><td class="text-right">{{ m.costo_estimado | currency:'MXN':'symbol-narrow':'1.2-2' }}</td><td><button (click)="anular('merma', m.id_merma)" class="chip bg-red-50 text-red-700">Anular</button></td></tr>}
-            @empty {<tr><td colspan="7" class="text-center opacity-60">Sin mermas este mes</td></tr>}</tbody></table>
+        <table class="tabla mt-3">
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Tipo</th>
+              <th>Nombre</th>
+              <th class="text-right">Cantidad</th>
+              <th>Motivo</th>
+              <th class="text-right">Costo</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (m of mermas(); track m.id_merma) {
+              <tr>
+                <td class="text-xs">{{ m.fecha }}</td>
+                <td>{{ m.tipo }}</td>
+                <td>{{ m.nombre }}</td>
+                <td class="text-right">{{ m.cantidad | number:'1.0-3' }} {{ m.unidad }}</td>
+                <td>{{ m.motivo }}</td>
+                <td class="text-right">{{ m.costo_estimado | currency:'MXN':'symbol-narrow':'1.2-2' }}</td>
+                <td><button (click)="anular('merma', m.id_merma)" class="chip bg-red-50 text-red-700">Anular</button></td>
+              </tr>
+            } @empty {
+              <tr><td colspan="7" class="text-center opacity-60">Sin mermas este mes</td></tr>
+            }
+          </tbody>
+        </table>
       </div>
     </section>
   }

@@ -5,9 +5,9 @@
 
 @if (reporte(); as r) {
   <!-- Tarjetas destacadas -->
-  <section class="mt-5 grid grid-cols-2 xl:grid-cols-4 gap-4">
+  <section class="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-4">
     <div class="tarjeta"><p class="text-sm font-bold">KPIs que cumplen</p><p class="mt-1 text-3xl font-black text-milpa">{{ r.resumen.metas_cumplidas }} de {{ r.resumen.metas_evaluadas }}</p><p class="text-xs opacity-70">Con datos este mes</p></div>
-    @for (k of [['csat','CSAT','4.5 o más'],['roas','ROAS','3 o más'],['costo_registro','Costo por registro','$40 o menos']]; track k[0]) {
+    @for (k of [['roas','ROAS','3 o más'],['costo_registro','Costo por registro','$40 o menos']]; track k[0]) {
       <div class="tarjeta">
         <p class="text-sm font-bold">{{ k[1] }}</p>
         <p class="mt-1 text-3xl font-black" [class]="destacada(k[0])?.cumple === false ? 'text-nixta-naranja' : 'text-nixta-verde'">{{ valor(destacada(k[0])) }}</p>

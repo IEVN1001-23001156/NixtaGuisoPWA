@@ -44,11 +44,10 @@
           @if (c.tipo === 'B2B') { <div><dt class="font-bold">RFC</dt><dd>{{ c.rfc || '—' }}</dd></div> }
           <div><dt class="font-bold">Registrado</dt><dd>{{ c.fecha_registro }} @if (c.referido_por) {· invitado por {{ c.referido_por }}}</dd></div>
         </dl>
-        <div class="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-xs">
+        <div class="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-2 text-center text-xs">
           <div class="rounded-2xl bg-nixta-crema p-2"><p class="text-lg font-black">{{ totales(c).pedidos }}</p>Pedidos</div>
           <div class="rounded-2xl bg-nixta-crema p-2"><p class="text-lg font-black">{{ totales(c).comprado | currency:'MXN':'symbol-narrow':'1.0-0' }}</p>Comprado</div>
           <div class="rounded-2xl bg-nixta-crema p-2"><p class="text-lg font-black">{{ c.saldo_favor | currency:'MXN':'symbol-narrow':'1.0-0' }}</p>Saldo</div>
-          <div class="rounded-2xl bg-nixta-crema p-2"><p class="text-lg font-black">{{ c.calificacion_promedio ?? '—' }}</p>CSAT</div>
         </div>
       </div>
 

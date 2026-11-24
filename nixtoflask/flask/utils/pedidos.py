@@ -32,8 +32,6 @@ def leer_productos(datos):
 
     cantidades = {}
     for item in productos:
-        # "Arma tu Comida Completa": tortilla + guisado + salsa + agua con 10 % de descuento.
-        # Cada componente se guarda como renglón propio, marcado con ('arma', id_producto).
         if isinstance(item, dict) and item.get('arma'):
             arma = item.get('arma') or {}
             try:
@@ -57,8 +55,6 @@ def leer_productos(datos):
         if cantidad <= 0:
             raise ErrorPedido('Las cantidades deben ser mayores a cero')
 
-        # Un paquete con salsa o agua elegidas se guarda como (paquete, salsa, agua);
-        # así el mismo paquete con distintas opciones queda en renglones separados.
         salsa, agua = item.get('salsa'), item.get('agua')
         if salsa or agua:
             try:
@@ -107,23 +103,40 @@ def componentes_paquete(cursor, id_paquete, salsa=None, agua=None):
     return elegidos, (' y '.join(textos) if textos else None)
 
 
+def _consumo_insumos_por_productos(cursor, requeridos):
+    """Calcula el total de insumos requeridos según las recetas de los productos."""
+    consumo_insumos = {}
+    for id_producto, cantidad in requeridos.items():
+        cursor.execute("""
+            SELECT ri.id_insumo, ri.cantidad, r.rendimiento
+            FROM receta_insumos ri
+            JOIN recetas r ON r.id_receta = ri.id_receta
+            WHERE r.id_producto = %s
+        """, (id_producto,))
+        for fila in cursor.fetchall():
+            rendimiento = float(fila['rendimiento'] or 1) or 1.0
+            total_insumo = (float(fila['cantidad']) / rendimiento) * float(cantidad)
+            id_insumo = int(fila['id_insumo'])
+            consumo_insumos[id_insumo] = consumo_insumos.get(id_insumo, 0.0) + total_insumo
+    return consumo_insumos
+
+
 def calcular_pedido(cursor, id_cliente, tipo, nivel, cantidades,
                     modalidad='domicilio', codigo_cupon='', usar_saldo=False,
                     bloquear=False):
     """
     Calcula el pedido completo aplicando todas las reglas.
     bloquear=True se usa al confirmar el pedido: aparta las filas de
-    productos (FOR UPDATE) para que dos pedidos al mismo tiempo no
-    vendan la misma existencia.
+    productos e insumos (FOR UPDATE) para que dos pedidos al mismo tiempo
+    no vendan la misma existencia.
     """
     if modalidad not in ('domicilio', 'recoger'):
         raise ErrorPedido('La modalidad de entrega no es válida')
 
     bloqueo = " FOR UPDATE" if bloquear else ""
 
-    # ---------- 1. PRODUCTOS Y PRECIOS ----------
     lineas = []
-    requeridos = {}          # id_producto -> cantidad que se descontará del inventario
+    requeridos = {}
     subtotal = 0.0
     kg_tortilla = 0.0
 
@@ -153,7 +166,6 @@ def calcular_pedido(cursor, id_cliente, tipo, nivel, cantidades,
             raise ErrorPedido(f"{producto['nombre']} se vende por kilo o medio kilo")
 
         if armado:
-            # Componente de "Arma tu Comida Completa": tortilla de 1 kg, guisado, salsa o agua
             if tipo == 'B2B':
                 raise ErrorPedido('Los paquetes son exclusivos para cuentas Hogar')
             categoria_lugar = {'tortilla': 1, 'guisado': 2, 'salsa': 3, 'agua': 5}[lugar]
@@ -173,7 +185,6 @@ def calcular_pedido(cursor, id_cliente, tipo, nivel, cantidades,
                 requeridos[id_componente] = requeridos.get(id_componente, 0) + cantidad_componente * cantidad
             if salsa or agua:
                 opciones = f"{salsa or ''},{agua or ''}|{texto_opciones or ''}"
-
         else:
             precio = precio_para(producto, tipo, nivel)
             requeridos[id_producto] = requeridos.get(id_producto, 0) + cantidad
@@ -198,7 +209,6 @@ def calcular_pedido(cursor, id_cliente, tipo, nivel, cantidades,
 
     subtotal = round(subtotal, 2)
 
-    # ---------- 2. EXISTENCIA ----------
     faltantes = []
     for id_producto, requerido in requeridos.items():
         cursor.execute(
@@ -214,7 +224,21 @@ def calcular_pedido(cursor, id_cliente, tipo, nivel, cantidades,
                 'solicitado': requerido
             })
 
-    # ---------- 3. PEDIDO MINIMO ----------
+    consumo_insumos = _consumo_insumos_por_productos(cursor, requeridos)
+    for id_insumo, requerido_insumo in consumo_insumos.items():
+        cursor.execute(
+            "SELECT nombre, unidad, existencia, activo FROM insumos WHERE id_insumo = %s" + bloqueo,
+            (id_insumo,)
+        )
+        ins = cursor.fetchone()
+        if ins and ((not ins['activo']) or float(ins['existencia']) < requerido_insumo):
+            faltantes.append({
+                'id_insumo': id_insumo,
+                'nombre': f"{ins['nombre']} ({ins['unidad']})",
+                'disponible': float(ins['existencia']) if ins['activo'] else 0,
+                'solicitado': round(requerido_insumo, 3)
+            })
+
     if tipo == 'B2B':
         cumple_minimo = kg_tortilla >= KG_MINIMO_TORTILLA_B2B
         mensaje_minimo = None if cumple_minimo else \
@@ -224,7 +248,6 @@ def calcular_pedido(cursor, id_cliente, tipo, nivel, cantidades,
         mensaje_minimo = None if cumple_minimo else \
             f"El pedido mínimo es de ${PEDIDO_MINIMO_B2C:.2f} en productos"
 
-    # ---------- 4. DESCUENTO (no se acumulan: se aplica el mayor) ----------
     descuento = 0.0
     motivo_descuento = None
     id_cupon = None
@@ -267,13 +290,11 @@ def calcular_pedido(cursor, id_cliente, tipo, nivel, cantidades,
     elif codigo_cupon:
         raise ErrorPedido('Los cupones son exclusivos para cuentas Hogar')
 
-    # ---------- 5. ENVIO ----------
     if tipo == 'B2B' or modalidad == 'recoger' or subtotal >= ENVIO_GRATIS_DESDE:
         costo_envio = 0.0
     else:
         costo_envio = COSTO_ENVIO_B2C
 
-    # ---------- 6. SALDO DE REFERIDOS ----------
     cursor.execute(
         "SELECT saldo_favor FROM clientes WHERE id_cliente = %s" + bloqueo,
         (id_cliente,)
@@ -301,16 +322,32 @@ def calcular_pedido(cursor, id_cliente, tipo, nivel, cantidades,
         'mensaje_minimo': mensaje_minimo,
         'faltantes': faltantes,
         'requeridos': requeridos,
+        'consumo_insumos': consumo_insumos,
         'puede_confirmar': cumple_minimo and not faltantes
     }
 
 
 def descontar_inventario(cursor, requeridos):
-    """Resta del producto terminado lo que se vendió."""
+    """Resta del producto terminado y de sus insumos de receta lo que se vendió."""
     for id_producto, cantidad in requeridos.items():
         cursor.execute(
-            "UPDATE productos SET existencia = existencia - %s WHERE id_producto = %s",
+            """
+            UPDATE productos
+            SET existencia = GREATEST(0, existencia - %s)
+            WHERE id_producto = %s
+            """,
             (cantidad, id_producto)
+        )
+
+    consumo_insumos = _consumo_insumos_por_productos(cursor, requeridos)
+    for id_insumo, total_insumo in consumo_insumos.items():
+        cursor.execute(
+            """
+            UPDATE insumos
+            SET existencia = GREATEST(0, existencia - %s)
+            WHERE id_insumo = %s
+            """,
+            (total_insumo, id_insumo)
         )
 
 
@@ -338,7 +375,6 @@ def insertar_pedido(cursor, id_cliente, id_usuario, calculo, modalidad, direccio
     ))
     id_pedido = cursor.lastrowid
 
-    # El precio se copia tal cual se cobró
     for linea in calculo['lineas']:
         cursor.execute("""
             INSERT INTO detalle_pedido (id_pedido, id_producto, cantidad, precio_unitario, subtotal, opciones)
@@ -362,7 +398,7 @@ def insertar_pedido(cursor, id_cliente, id_usuario, calculo, modalidad, direccio
 
 
 def reponer_inventario(cursor, id_pedido):
-    """Regresa al inventario lo que se había descontado (al cancelar)."""
+    """Regresa al inventario de productos e insumos lo descontado (al cancelar)."""
     cursor.execute("""
         SELECT d.id_producto, d.cantidad, d.opciones, p.es_paquete
         FROM detalle_pedido d
@@ -370,6 +406,7 @@ def reponer_inventario(cursor, id_pedido):
         WHERE d.id_pedido = %s
     """, (id_pedido,))
 
+    repuestos = {}
     for linea in cursor.fetchall():
         if linea['es_paquete']:
             salsa = agua = None
@@ -382,15 +419,27 @@ def reponer_inventario(cursor, id_pedido):
             except ErrorPedido:
                 componentes, _ = componentes_paquete(cursor, linea['id_producto'])
             for id_componente, cantidad_componente in componentes:
+                cant_comp = cantidad_componente * float(linea['cantidad'])
+                repuestos[id_componente] = repuestos.get(id_componente, 0.0) + cant_comp
                 cursor.execute(
                     "UPDATE productos SET existencia = existencia + %s WHERE id_producto = %s",
-                    (cantidad_componente * float(linea['cantidad']), id_componente)
+                    (cant_comp, id_componente)
                 )
         else:
+            cant = float(linea['cantidad'])
+            id_prod = int(linea['id_producto'])
+            repuestos[id_prod] = repuestos.get(id_prod, 0.0) + cant
             cursor.execute(
                 "UPDATE productos SET existencia = existencia + %s WHERE id_producto = %s",
-                (linea['cantidad'], linea['id_producto'])
+                (cant, id_prod)
             )
+
+    consumo_insumos = _consumo_insumos_por_productos(cursor, repuestos)
+    for id_insumo, total_insumo in consumo_insumos.items():
+        cursor.execute(
+            "UPDATE insumos SET existencia = existencia + %s WHERE id_insumo = %s",
+            (total_insumo, id_insumo)
+        )
 
 
 def notificar(cursor, id_usuario, titulo, mensaje):

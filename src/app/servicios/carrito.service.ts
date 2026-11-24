@@ -1,5 +1,6 @@
 import { Injectable, signal, computed, effect, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
+import { firstValueFrom } from 'rxjs';
 import { ProductoCatalogo } from './catalogo.service';
 
 export interface ItemCarrito {
@@ -43,7 +44,7 @@ interface CalculoServidor {
   total: number;
   cumple_minimo: boolean;
   mensaje_minimo: string | null;
-  faltantes: { nombre: string }[];
+  faltantes: { nombre: string; disponible?: number; solicitado?: number }[];
   puede_confirmar: boolean;
 }
 
@@ -79,10 +80,6 @@ export class CarritoService {
 
   private readonly http = inject(HttpClient);
 
-  /**
-   * Cálculo oficial de Flask (/api/pedidos/calcular): precio según el tipo de cliente,
-   * descuento de primer pedido, envío ($30, gratis desde $250) y pedido mínimo.
-   */
   readonly calculo = signal<CalculoServidor | null>(null);
   private esperaCalculo?: ReturnType<typeof setTimeout>;
 
@@ -94,13 +91,26 @@ export class CarritoService {
       return;
     }
     this.esperaCalculo = setTimeout(() => {
-      this.http.post<CalculoServidor>('http://localhost:5000/api/pedidos/calcular', {
-        productos: items.map((i) => ({ id_producto: i.producto.id, cantidad: i.cantidad, salsa: i.salsa, agua: i.agua, arma: i.arma })),
-        modalidad: 'domicilio',
-      }, { withCredentials: true }).subscribe({
-        next: (r) => this.calculo.set(r),
-        error: (e) => this.calculo.set({ exito: false, mensaje: e?.error?.mensaje } as CalculoServidor),
-      });
+      this.http
+        .post<CalculoServidor>(
+          'http://localhost:5000/api/pedidos/calcular',
+          {
+            productos: items.map((i) => ({
+              id_producto: i.producto.id,
+              cantidad: i.cantidad,
+              salsa: i.salsa,
+              agua: i.agua,
+              arma: i.arma,
+            })),
+            modalidad: 'domicilio',
+          },
+          { withCredentials: true }
+        )
+        .subscribe({
+          next: (r) => this.calculo.set(r),
+          error: (e) =>
+            this.calculo.set({ exito: false, mensaje: e?.error?.mensaje } as CalculoServidor),
+        });
     }, 300);
   });
 
@@ -112,7 +122,9 @@ export class CarritoService {
     if (!c) return null;
     if (c.exito === false) return c.mensaje || 'No se pudo calcular el total';
     if (!c.cumple_minimo) return c.mensaje_minimo;
-    if (c.faltantes?.length) return `Sin existencia suficiente de: ${c.faltantes.map((f) => f.nombre).join(', ')}`;
+    if (c.faltantes?.length) {
+      return `Sin existencia suficiente de: ${c.faltantes.map((f) => f.nombre).join(', ')}`;
+    }
     return null;
   });
   readonly puedeConfirmar = computed(() => !!this.calculo()?.puede_confirmar);
@@ -139,6 +151,57 @@ export class CarritoService {
     return [d.calle, d.colonia, d.ciudad].map((v) => v?.trim()).filter(Boolean).join(', ');
   });
 
+  async validarDisponibilidadAdicion(
+    producto: ProductoCatalogo,
+    cantidadExtra: number,
+    opciones?: OpcionesPaquete,
+    arma?: ArmaPaquete
+  ): Promise<{ ok: boolean; mensaje?: string }> {
+    const simulados = [
+      ...this.items().map((i) => ({
+        id_producto: i.producto.id,
+        cantidad: i.cantidad,
+        salsa: i.salsa ?? null,
+        agua: i.agua ?? null,
+        arma: i.arma ?? null,
+      })),
+      {
+        id_producto: producto.id,
+        cantidad: cantidadExtra,
+        salsa: opciones?.salsa ?? null,
+        agua: opciones?.agua ?? null,
+        arma: arma ?? null,
+      },
+    ];
+
+    try {
+      const resp = await firstValueFrom(
+        this.http.post<CalculoServidor>(
+          'http://localhost:5000/api/pedidos/calcular',
+          { productos: simulados, modalidad: 'domicilio' },
+          { withCredentials: true }
+        )
+      );
+
+      if (resp.exito === false) {
+        return { ok: false, mensaje: resp.mensaje || 'No se pudo verificar la existencia.' };
+      }
+      if (resp.faltantes && resp.faltantes.length > 0) {
+        const nombres = resp.faltantes.map((f) => f.nombre).join(', ');
+        return {
+          ok: false,
+          mensaje: `Existencia/insumos insuficientes para esa cantidad (faltantes: ${nombres}).`,
+        };
+      }
+      return { ok: true };
+    } catch (err: any) {
+      return {
+        ok: false,
+        mensaje: err?.error?.mensaje || 'No se pudo validar la existencia disponible.',
+      };
+    }
+  }
+
   cargarCarritoUsuario(idUsuario: number | null): void {
     const idAnterior = this.usuarioActivoId();
     if (idAnterior === idUsuario) return;
@@ -148,6 +211,7 @@ export class CarritoService {
 
     this.usuarioActivoId.set(idUsuario);
     this.items.set(itemsGuardados);
+    this.cargarDireccionUsuario(idUsuario);
 
     if (itemsInvitado.length > 0) {
       for (const item of itemsInvitado) {
@@ -165,15 +229,24 @@ export class CarritoService {
     }
   }
 
-  agregarProducto(producto: ProductoCatalogo, cantidad = 1, notaEspecial = '', opciones?: OpcionesPaquete, arma?: ArmaPaquete): void {
+  agregarProducto(
+    producto: ProductoCatalogo,
+    cantidad = 1,
+    notaEspecial = '',
+    opciones?: OpcionesPaquete,
+    arma?: ArmaPaquete
+  ): void {
     const notaLimpia = notaEspecial.trim();
     const salsa = opciones?.salsa ?? null;
     const agua = opciones?.agua ?? null;
     this.items.update((actual) => {
       const idx = actual.findIndex(
-        (i) => i.producto.id === producto.id && i.notaEspecial === notaLimpia &&
-               (i.salsa ?? null) === salsa && (i.agua ?? null) === agua &&
-               JSON.stringify(i.arma ?? null) === JSON.stringify(arma ?? null)
+        (i) =>
+          i.producto.id === producto.id &&
+          i.notaEspecial === notaLimpia &&
+          (i.salsa ?? null) === salsa &&
+          (i.agua ?? null) === agua &&
+          JSON.stringify(i.arma ?? null) === JSON.stringify(arma ?? null)
       );
       if (idx >= 0) {
         const copia = [...actual];
@@ -183,8 +256,18 @@ export class CarritoService {
         };
         return copia;
       }
-      return [...actual, { producto, cantidad, notaEspecial: notaLimpia, salsa, agua,
-                           opcionesTexto: arma?.texto ?? opciones?.texto, arma }];
+      return [
+        ...actual,
+        {
+          producto,
+          cantidad,
+          notaEspecial: notaLimpia,
+          salsa,
+          agua,
+          opcionesTexto: arma?.texto ?? opciones?.texto,
+          arma,
+        },
+      ];
     });
   }
 
@@ -214,14 +297,21 @@ export class CarritoService {
       referencias: (datos.referencias || '').trim(),
     };
     this.direccionEntrega.set(limpia);
+    const idDestino = idUsuario ?? this.usuarioActivoId();
     try {
-      localStorage.setItem(this.claveDireccion(idUsuario), JSON.stringify(limpia));
+      localStorage.setItem(this.claveDireccion(idDestino), JSON.stringify(limpia));
+      if (idDestino !== null && idDestino !== undefined) {
+        localStorage.setItem(this.claveDireccion(null), JSON.stringify(limpia));
+      }
     } catch {}
   }
 
   cargarDireccionUsuario(idUsuario?: number | null): DatosEntrega {
+    const idConsulta = idUsuario ?? this.usuarioActivoId();
     try {
-      const raw = localStorage.getItem(this.claveDireccion(idUsuario));
+      const raw =
+        localStorage.getItem(this.claveDireccion(idConsulta)) ||
+        localStorage.getItem(this.claveDireccion(null));
       if (raw) {
         const parsed = JSON.parse(raw) as Partial<DatosEntrega>;
         const cargada: DatosEntrega = {

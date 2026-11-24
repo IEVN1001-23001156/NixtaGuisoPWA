@@ -155,7 +155,6 @@ def editar_repartidor(id_repartidor):
             cursor.close()
 
 
-
 # =====================================================================
 #  PEDIDOS (Módulo 10)
 # =====================================================================
@@ -224,7 +223,6 @@ def listar_pedidos_admin():
 
         cursor = mysql.connection.cursor()
 
-        # Conteo por estado (para las pestañas del panel)
         cursor.execute(
             "SELECT p.estado, COUNT(*) AS total FROM pedidos p" + filtros + " GROUP BY p.estado",
             parametros
@@ -358,7 +356,7 @@ def detalle_pedido_admin(id_pedido):
 
 
 # ---------------------------------------------------------------------
-#  CAMBIAR ESTADO  { "estado": "preparando" }
+#  CAMBIAR ESTADO  { "estado": "preparando", "motivo": "..." }
 # ---------------------------------------------------------------------
 
 @admin_despacho_bp.route('/api/admin/pedidos/<int:id_pedido>/estado', methods=['PUT'])
@@ -367,7 +365,9 @@ def cambiar_estado(id_pedido):
     cursor = None
 
     try:
-        nuevo = (request.get_json(silent=True) or {}).get('estado')
+        datos = request.get_json(silent=True) or {}
+        nuevo = datos.get('estado')
+        motivo = texto(datos, 'motivo', 'Motivo', maximo=255, obligatorio=False)
 
         if nuevo not in ESTADOS:
             raise ErrorValidacion('El estado no es válido')
@@ -382,8 +382,6 @@ def cambiar_estado(id_pedido):
         if nuevo not in SIGUIENTES[actual]:
             raise ErrorValidacion(f"Un pedido '{actual}' no puede pasar a '{nuevo}'")
 
-        # Reglas de pago: los pedidos Hogar deben estar pagados para avanzar.
-        # Los negocios pueden avanzar con pago por validar (liquidan semanalmente).
         if nuevo in ('preparando', 'en_ruta', 'entregado') and \
                 p['tipo_cliente'] == 'B2C' and p['estado_pago'] != 'pagado':
             raise ErrorValidacion('Primero valida el pago del pedido')
@@ -405,6 +403,8 @@ def cambiar_estado(id_pedido):
         bono = False
 
         if nuevo == 'cancelado':
+            if not motivo:
+                raise ErrorValidacion('Indica el motivo de la cancelación')
             reponer_inventario(cursor, id_pedido)
             if float(p['saldo_aplicado']) > 0:
                 cursor.execute(
@@ -412,13 +412,19 @@ def cambiar_estado(id_pedido):
                     (p['saldo_aplicado'], p['id_cliente'])
                 )
             mensaje += ". El producto regresó al inventario."
+            aviso_usuario = (
+                f"Tu pedido fue cancelado. Motivo: {motivo}. "
+                "Si usaste saldo, ya se regresó a tu cuenta."
+            )
+        else:
+            aviso_usuario = AVISOS[nuevo]
 
         if nuevo == 'entregado':
             bono = otorgar_bono_referido(cursor, p['id_cliente'])
             if bono:
                 mensaje += ". Se otorgó el bono de referido."
 
-        notificar(cursor, p['id_usuario'], f"Pedido #{id_pedido}", AVISOS[nuevo])
+        notificar(cursor, p['id_usuario'], f"Pedido #{id_pedido}", aviso_usuario)
 
         mysql.connection.commit()
 
@@ -426,6 +432,7 @@ def cambiar_estado(id_pedido):
             'exito': True,
             'mensaje': mensaje,
             'estado': nuevo,
+            'motivo': motivo if nuevo == 'cancelado' else None,
             'bono_referido': bono,
             'siguientes_estados': list(SIGUIENTES[nuevo])
         }), 200
@@ -571,7 +578,6 @@ def asignar_repartidor(id_pedido):
         if not repartidor:
             raise ErrorValidacion('El repartidor no existe o está inactivo', 404)
 
-        # El pedido se agrega como la última parada de la ruta del repartidor ese día
         if p['id_repartidor'] == id_repartidor and p['orden_ruta']:
             orden = p['orden_ruta']
         else:
@@ -610,7 +616,6 @@ def asignar_repartidor(id_pedido):
 
 # ---------------------------------------------------------------------
 #  GENERAR LOS PEDIDOS PROGRAMADOS DE HOY
-#  Se puede presionar varias veces: no duplica pedidos.
 # ---------------------------------------------------------------------
 
 def toca_hoy(prog, hoy):
@@ -650,7 +655,6 @@ def generar_pedidos_programados():
         for prog in programaciones:
             nombre = prog['nombre_negocio'] or prog['cliente']
 
-            # ¿Ya se generó hoy?
             cursor.execute("""
                 SELECT id_pedido FROM pedidos
                 WHERE id_programacion = %s AND DATE(fecha_pedido) = %s
@@ -727,7 +731,6 @@ def generar_pedidos_programados():
             cursor.close()
 
 
-
 # =====================================================================
 #  MAPA DE RUTAS
 # =====================================================================
@@ -747,12 +750,6 @@ def armar_parada(f):
         'notas': f['notas']
     }
 
-
-# ---------------------------------------------------------------------
-#  RUTAS DE UN DIA, POR REPARTIDOR
-#  /api/admin/rutas?fecha=2026-11-19   (por defecto, hoy)
-#  Sirve para planear el día y para consultar rutas guardadas.
-# ---------------------------------------------------------------------
 
 @admin_despacho_bp.route('/api/admin/rutas', methods=['GET'])
 @admin_requerido
@@ -826,11 +823,6 @@ def rutas_del_dia():
             cursor.close()
 
 
-# ---------------------------------------------------------------------
-#  GUARDAR EL ORDEN DE LAS PARADAS
-#  { "id_repartidor": 1, "pedidos": [5, 3, 8] }   -> 5 es la parada 1
-# ---------------------------------------------------------------------
-
 @admin_despacho_bp.route('/api/admin/rutas/orden', methods=['PUT'])
 @admin_requerido
 def guardar_orden_ruta():
@@ -892,10 +884,6 @@ def guardar_orden_ruta():
         if cursor:
             cursor.close()
 
-
-# ---------------------------------------------------------------------
-#  CORREGIR LA UBICACION DE UN PEDIDO  { "latitud": ..., "longitud": ... }
-# ---------------------------------------------------------------------
 
 @admin_despacho_bp.route('/api/admin/pedidos/<int:id_pedido>/ubicacion', methods=['PUT'])
 @admin_requerido

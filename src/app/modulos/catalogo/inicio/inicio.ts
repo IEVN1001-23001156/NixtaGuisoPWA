@@ -2,6 +2,7 @@ import { Component, inject, OnInit, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { BarraInferior } from '../../../compartidos/barra-inferior/barra-inferior';
 import { MenuLateral } from '../../../compartidos/menu-lateral/menu-lateral';
+import { CampanaAvisos } from '../../../compartidos/campana-avisos/campana-avisos';
 import { AuthRolService } from '../../../servicios/auth-rol.service';
 import { CarritoService } from '../../../servicios/carrito.service';
 import { CatalogoService, ProductoCatalogo } from '../../../servicios/catalogo.service';
@@ -17,7 +18,7 @@ export type FiltroCategoria =
   | 'Combos / Paquetes';
 
 @Component({
-  imports: [RouterLink, BarraInferior, MenuLateral],
+  imports: [RouterLink, BarraInferior, MenuLateral, CampanaAvisos],
   selector: 'app-inicio',
   styleUrl: './inicio.css',
   templateUrl: './inicio.html',

@@ -17,6 +17,12 @@
 
     <main class="lg:bg-white lg:rounded-[2rem] lg:p-8 lg:shadow-xl lg:border lg:border-cacao/10">
       @if (carritoService.items().length > 0) {
+        @if (alertaCantidad()) {
+          <div class="mb-4 rounded-2xl bg-red-50 border border-red-200 px-4 py-3 text-xs lg:text-sm font-bold text-red-700">
+            {{ alertaCantidad() }}
+          </div>
+        }
+
         <div class="lg:grid lg:grid-cols-12 lg:gap-8">
           <div class="lg:col-span-7 space-y-4">
             @for (item of carritoService.items(); track $index) {
@@ -29,7 +35,9 @@
                   />
                   <div class="min-w-0">
                     <h2 class="text-sm lg:text-base font-extrabold text-cacao truncate">{{ item.producto.nombre }}</h2>
-                    <p class="text-xs text-cacao/65">{{ item.producto.unidad }} · ${{ item.producto.precio }} MXN c/u</p>
+                    <p class="text-xs text-cacao/65">
+                      {{ item.producto.unidad }} · ${{ item.producto.precio | number:'1.0-2' }} MXN c/u
+                    </p>
                     @if (item.opcionesTexto) {
                       <p class="text-[11px] text-cacao/70 font-semibold truncate mt-0.5">Con {{ item.opcionesTexto }}</p>
                     }
@@ -37,24 +45,33 @@
                       <p class="text-[11px] text-milpa font-semibold truncate mt-0.5">Nota: {{ item.notaEspecial }}</p>
                     }
                     <p class="text-sm lg:text-base font-black text-salsa mt-1">
-                      ${{ item.producto.precio * item.cantidad }} MXN
+                      ${{ redondear(item.producto.precio * item.cantidad) | number:'1.0-2' }} MXN
                     </p>
                   </div>
                 </div>
 
-                <div class="flex items-center gap-2.5 bg-crema lg:bg-white px-3 py-1.5 rounded-full border border-cacao/15 shrink-0">
+                <div class="flex items-center gap-2 bg-crema lg:bg-white px-2.5 py-1.5 rounded-full border border-cacao/15 shrink-0">
                   <button
                     type="button"
-                    (click)="cambiarCantidad($index, -1)"
-                    class="w-7 h-7 rounded-full bg-white lg:bg-crema text-cacao font-extrabold flex items-center justify-center cursor-pointer"
+                    (click)="cambiarCantidad($index, -pasoItem(item.producto.unidad))"
+                    class="w-7 h-7 rounded-full bg-white lg:bg-crema text-cacao font-extrabold flex items-center justify-center cursor-pointer shrink-0"
                   >
                     -
                   </button>
-                  <span class="text-sm font-black text-cacao min-w-5 text-center">{{ item.cantidad }}</span>
+                  <input
+                    type="number"
+                    [min]="0"
+                    [step]="pasoItem(item.producto.unidad)"
+                    [ngModel]="item.cantidad"
+                    (ngModelChange)="onCantidadItemInput($index, $event)"
+                    (blur)="normalizarItemAlSalir($index)"
+                    aria-label="Cantidad del producto"
+                    class="w-16 text-center text-sm font-black text-cacao bg-transparent focus:outline-none focus:ring-2 focus:ring-maiz rounded-md [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  />
                   <button
                     type="button"
-                    (click)="cambiarCantidad($index, 1)"
-                    class="w-7 h-7 rounded-full bg-white lg:bg-crema text-cacao font-extrabold flex items-center justify-center cursor-pointer"
+                    (click)="cambiarCantidad($index, pasoItem(item.producto.unidad))"
+                    class="w-7 h-7 rounded-full bg-white lg:bg-crema text-cacao font-extrabold flex items-center justify-center cursor-pointer shrink-0"
                   >
                     +
                   </button>
@@ -68,24 +85,28 @@
               <h2 class="text-base lg:text-lg font-extrabold text-cacao">Resumen del pedido</h2>
               <div class="flex justify-between text-xs lg:text-sm text-cacao/80">
                 <span>Subtotal</span>
-                <span class="font-bold">${{ carritoService.subtotal() }} MXN</span>
+                <span class="font-bold">${{ carritoService.subtotal() | number:'1.0-2' }} MXN</span>
               </div>
               @if (carritoService.descuento() > 0) {
                 <div class="flex justify-between text-xs lg:text-sm text-green-700">
                   <span>{{ carritoService.motivoDescuento() }}</span>
-                  <span class="font-bold">−${{ carritoService.descuento() }} MXN</span>
+                  <span class="font-bold">−${{ carritoService.descuento() | number:'1.0-2' }} MXN</span>
                 </div>
               }
               <div class="flex justify-between text-xs lg:text-sm text-cacao/80">
                 <span>Envío a domicilio</span>
-                <span class="font-bold">{{ carritoService.envio() > 0 ? '$' + carritoService.envio() + ' MXN' : 'Gratis' }}</span>
+                <span class="font-bold">
+                  {{ carritoService.envio() > 0 ? '$' + (carritoService.envio() | number:'1.0-2') + ' MXN' : 'Gratis' }}
+                </span>
               </div>
               @if (carritoService.avisoServidor(); as aviso) {
-                <p class="rounded-2xl bg-red-50 border border-red-200 px-3 py-2 text-xs text-red-700">{{ aviso }}</p>
+                <p class="rounded-2xl bg-red-50 border border-red-200 px-3 py-2 text-xs font-bold text-red-700">{{ aviso }}</p>
               }
               <div class="pt-3 border-t border-cacao/10 flex justify-between items-center">
                 <span class="text-base font-extrabold text-cacao">Total</span>
-                <span class="text-xl lg:text-2xl font-black text-cacao">${{ carritoService.total() }} MXN</span>
+                <span class="text-xl lg:text-2xl font-black text-cacao">
+                  ${{ carritoService.total() | number:'1.0-2' }} MXN
+                </span>
               </div>
 
               <button

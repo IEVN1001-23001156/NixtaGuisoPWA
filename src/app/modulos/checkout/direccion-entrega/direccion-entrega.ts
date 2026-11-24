@@ -33,32 +33,33 @@ export class DireccionEntrega implements OnInit {
         this.colonia = guardada.colonia;
         this.ciudad = guardada.ciudad || 'León, Guanajuato';
         this.referencias = guardada.referencias;
-      } else if (u?.cliente?.direccion?.trim()) {
+      } else if (u?.cliente?.direccion?.trim() && !this.calle) {
         this.calle = u.cliente.direccion.trim();
       }
     });
   }
 
-  ngOnInit(): void {
+  async ngOnInit(): Promise<void> {
+    if (!this.authRol.usuario()) {
+      await this.authRol.consultarSesionActual();
+    }
     const u = this.authRol.usuario();
     const guardada = this.carritoService.cargarDireccionUsuario(u?.id_usuario ?? null);
-    this.calle = guardada.calle || u?.cliente?.direccion?.trim() || '';
-    this.colonia = guardada.colonia || '';
-    this.ciudad = guardada.ciudad || 'León, Guanajuato';
-    this.referencias = guardada.referencias || '';
+    this.calle = guardada.calle || u?.cliente?.direccion?.trim() || this.calle || '';
+    this.colonia = guardada.colonia || this.colonia || '';
+    this.ciudad = guardada.ciudad || this.ciudad || 'León, Guanajuato';
+    this.referencias = guardada.referencias || this.referencias || '';
   }
 
   continuarPago(event: Event): void {
     event.preventDefault();
-    this.carritoService.establecerDireccion(
-      {
-        calle: this.calle.trim(),
-        colonia: this.colonia.trim(),
-        ciudad: this.ciudad.trim() || 'León, Guanajuato',
-        referencias: this.referencias.trim(),
-      },
-      this.authRol.usuario()?.id_usuario ?? null
-    );
+    const datos = {
+      calle: this.calle.trim(),
+      colonia: this.colonia.trim(),
+      ciudad: this.ciudad.trim() || 'León, Guanajuato',
+      referencias: this.referencias.trim(),
+    };
+    this.carritoService.establecerDireccion(datos, this.authRol.usuario()?.id_usuario ?? null);
     this.router.navigate(['/checkout/pago']);
   }
 }

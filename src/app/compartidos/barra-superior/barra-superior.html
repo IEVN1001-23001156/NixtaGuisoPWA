@@ -21,20 +21,89 @@
       </a>
     </div>
 
-    <a
-      routerLink="/perfil"
-      aria-label="Perfil de usuario"
-      class="w-11 h-11 rounded-full bg-crema text-cacao border-2 border-white shadow-sm flex items-center justify-center font-extrabold text-sm hover:scale-105 transition shrink-0 overflow-hidden"
-    >
-      @if (fotoPerfilService.fotoUrl()) {
-        <img
-          [src]="fotoPerfilService.fotoUrl()!"
-          alt="Foto de perfil"
-          class="w-full h-full object-cover"
-        />
-      } @else {
-        <span>{{ inicialesUsuario }}</span>
+    <div class="flex items-center gap-2.5">
+      @if (!esAdmin()) {
+        <div class="relative">
+          <button
+            type="button"
+            (click)="toggleAvisos()"
+            aria-label="Notificaciones"
+            class="relative w-11 h-11 rounded-full bg-crema text-cacao border-2 border-white shadow-sm flex items-center justify-center hover:scale-105 transition cursor-pointer shrink-0"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V4a2 2 0 10-4 0v1.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+              />
+            </svg>
+
+            @if (noLeidas() > 0) {
+              <span class="absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-red-600 text-white text-[11px] font-black grid place-items-center shadow">
+                {{ noLeidas() }}
+              </span>
+            }
+          </button>
+
+          @if (menuAvisosAbierto()) {
+            <div class="absolute right-0 mt-2 w-80 max-w-[90vw] rounded-2xl bg-white text-cacao shadow-xl border border-cacao/10 p-3 z-50">
+              <div class="flex items-center justify-between pb-2 border-b border-cacao/10">
+                <span class="font-extrabold text-sm">Avisos</span>
+                @if (noLeidas() > 0) {
+                  <button
+                    type="button"
+                    (click)="marcarTodasLeidas()"
+                    class="text-xs font-bold text-milpa hover:underline cursor-pointer"
+                  >
+                    Marcar todas leídas
+                  </button>
+                }
+              </div>
+
+              <div class="mt-2 max-h-72 overflow-y-auto divide-y divide-cacao/10">
+                @for (a of avisos(); track a.id_notificacion) {
+                  <button
+                    type="button"
+                    (click)="marcarLeida(a)"
+                    class="w-full text-left py-2.5 px-2 rounded-xl hover:bg-crema/70 transition flex items-start gap-2.5 cursor-pointer"
+                    [class.opacity-70]="a.leida"
+                  >
+                    <span
+                      class="mt-1.5 w-2.5 h-2.5 rounded-full shrink-0"
+                      [class]="a.leida ? 'bg-gray-300' : (a.mensaje.toLowerCase().includes('cancelado') ? 'bg-red-600' : 'bg-maiz')"
+                    ></span>
+                    <div class="min-w-0 flex-1">
+                      <p class="text-xs font-extrabold">
+                        {{ a.titulo }}
+                        <span class="font-normal opacity-60">· {{ a.fecha }}</span>
+                      </p>
+                      <p class="text-xs mt-0.5 leading-snug">{{ a.mensaje }}</p>
+                    </div>
+                  </button>
+                } @empty {
+                  <p class="text-xs opacity-60 py-4 text-center">No tienes avisos por ahora</p>
+                }
+              </div>
+            </div>
+          }
+        </div>
       }
-    </a>
+
+      <a
+        routerLink="/perfil"
+        aria-label="Perfil de usuario"
+        class="w-11 h-11 rounded-full bg-crema text-cacao border-2 border-white shadow-sm flex items-center justify-center font-extrabold text-sm hover:scale-105 transition shrink-0 overflow-hidden"
+      >
+        @if (fotoPerfilService.fotoUrl()) {
+          <img
+            [src]="fotoPerfilService.fotoUrl()!"
+            alt="Foto de perfil"
+            class="w-full h-full object-cover"
+          />
+        } @else {
+          <span>{{ inicialesUsuario }}</span>
+        }
+      </a>
+    </div>
   </div>
 </header>

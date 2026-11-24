@@ -28,11 +28,12 @@ export class Inventario implements OnInit {
   costoMermas = signal(0);
   productos = signal<ProductoAdmin[]>([]);
   filtroStock = signal<'todos' | 'optimo' | 'por_surtir'>('todos');
+  guardandoReceta = signal(false);
 
   insumosFiltrados = computed(() => this.filtroStock() === 'todos' ? this.insumos() : this.insumos().filter(i => i.estado === this.filtroStock()));
   porSurtir = computed(() => this.insumos().filter(i => i.estado === 'por_surtir').length);
 
-  // Edición
+  // Edición y creación
   insumoEditado = signal<any>(null);
   recetaEditada = signal<any>(null);
   cantidades: Record<number, number> = {};
@@ -41,6 +42,13 @@ export class Inventario implements OnInit {
   compra = { id_insumo: 0, cantidad: null as number | null, costo_total: null as number | null, proveedor: '' };
   produccion = { id_receta: 0, num_lotes: 1, notas: '' };
   merma = { tipo: 'insumo' as 'insumo' | 'producto', id: 0, cantidad: null as number | null, motivo: '' };
+  nuevaReceta = {
+    id_producto: 0,
+    nombre: '',
+    rendimiento: 1,
+    costo_lote: 0,
+    insumos: [{ id_insumo: 0, cantidad: 0 }] as { id_insumo: number; cantidad: number }[],
+  };
 
   recetaElegida = computed(() => this.recetas().find(r => r.id_receta === Number(this.produccion.id_receta)) ?? null);
 
@@ -98,7 +106,7 @@ export class Inventario implements OnInit {
     this.admin.ajustarExistencia(p.id_producto, Number(valor)).subscribe(this.resultado('Existencia ajustada'));
   }
 
-  // ---------- Compras y producción ----------
+  // ---------- Compras, recetas y producción ----------
   registrarCompra(): void {
     this.admin.registrarCompra({ ...this.compra, cantidad: Number(this.compra.cantidad), costo_total: Number(this.compra.costo_total) }).subscribe(this.resultado());
     this.compra = { id_insumo: this.compra.id_insumo, cantidad: null, costo_total: null, proveedor: '' };
@@ -107,6 +115,51 @@ export class Inventario implements OnInit {
   registrarProduccion(): void {
     this.admin.registrarProduccion(this.produccion).subscribe(this.resultado());
     this.produccion = { ...this.produccion, num_lotes: 1, notas: '' };
+  }
+
+  agregarInsumoNuevaReceta(): void {
+    const usados = new Set(this.nuevaReceta.insumos.map(i => Number(i.id_insumo)));
+    const libre = this.insumos().find(i => !usados.has(i.id_insumo)) ?? this.insumos()[0];
+    this.nuevaReceta.insumos.push({ id_insumo: libre?.id_insumo ?? 0, cantidad: 0 });
+  }
+
+  quitarInsumoNuevaReceta(indice: number): void {
+    this.nuevaReceta.insumos.splice(indice, 1);
+  }
+
+  crearReceta(): void {
+    const insumosValidos = this.nuevaReceta.insumos
+      .filter(i => Number(i.id_insumo) > 0 && Number(i.cantidad) > 0)
+      .map(i => ({ id_insumo: Number(i.id_insumo), cantidad: Number(i.cantidad) }));
+
+    if (!this.nuevaReceta.id_producto || !this.nuevaReceta.nombre.trim() || insumosValidos.length === 0) {
+      this.avisos.error('Selecciona un producto, un nombre y al menos un insumo con cantidad mayor a 0');
+      return;
+    }
+
+    this.guardandoReceta.set(true);
+    this.admin.crearReceta({
+      id_producto: Number(this.nuevaReceta.id_producto),
+      nombre: this.nuevaReceta.nombre.trim(),
+      rendimiento: Number(this.nuevaReceta.rendimiento),
+      costo_lote: Number(this.nuevaReceta.costo_lote || 0),
+      insumos: insumosValidos,
+    }).subscribe({
+      ...this.resultado('Receta creada', () => {
+        this.nuevaReceta = {
+          id_producto: 0,
+          nombre: '',
+          rendimiento: 1,
+          costo_lote: 0,
+          insumos: [{ id_insumo: 0, cantidad: 0 }],
+        };
+        this.guardandoReceta.set(false);
+      }),
+      error: (err: { error?: { mensaje?: string } }) => {
+        this.guardandoReceta.set(false);
+        this.avisos.error(err.error?.mensaje || 'No se pudo crear la receta');
+      },
+    });
   }
 
   editarReceta(r: Receta): void {

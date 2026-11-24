@@ -60,6 +60,15 @@ export class AdminService {
   compras(): R<{ compras: Compra[] }> { return this.http.get<Respuesta & { compras: Compra[] }>(`${this.api}/compras`); }
   registrarCompra(datos: { id_insumo: number; cantidad: number; costo_total: number; proveedor?: string }): R<{}> { return this.http.post<Respuesta>(`${this.api}/compras`, datos); }
   recetas(): R<{ recetas: Receta[] }> { return this.http.get<Respuesta & { recetas: Receta[] }>(`${this.api}/recetas`); }
+  crearReceta(datos: {
+    id_producto: number;
+    nombre: string;
+    rendimiento: number;
+    costo_lote: number;
+    insumos: { id_insumo: number; cantidad: number }[];
+  }): R<{ id_receta?: number }> {
+    return this.http.post<Respuesta & { id_receta?: number }>(`${this.api}/recetas`, datos);
+  }
   producciones(): R<{ producciones: Produccion[] }> { return this.http.get<Respuesta & { producciones: Produccion[] }>(`${this.api}/producciones`); }
   registrarProduccion(datos: { id_receta: number; num_lotes: number; notas?: string }): R<{ cantidad_producida: number }> {
     return this.http.post<Respuesta & { cantidad_producida: number }>(`${this.api}/producciones`, datos);
@@ -85,7 +94,9 @@ export class AdminService {
     return this.http.get<Respuesta & { conteo: Record<EstadoPedido, number>; pedidos: PedidoAdmin[] }>(`${this.api}/pedidos`, { params: this.params(filtros) });
   }
   pedido(id: number): R<{ pedido: PedidoAdminDetalle }> { return this.http.get<Respuesta & { pedido: PedidoAdminDetalle }>(`${this.api}/pedidos/${id}`); }
-  cambiarEstado(id: number, estado: EstadoPedido): R<{ bono_referido: boolean }> { return this.http.put<Respuesta & { bono_referido: boolean }>(`${this.api}/pedidos/${id}/estado`, { estado }); }
+  cambiarEstado(id: number, estado: EstadoPedido, motivo?: string): R<{ bono_referido: boolean }> {
+    return this.http.put<Respuesta & { bono_referido: boolean }>(`${this.api}/pedidos/${id}/estado`, { estado, ...(motivo ? { motivo } : {}) });
+  }
   validarPago(id: number, accion: 'validar' | 'rechazar'): R<{}> { return this.http.put<Respuesta>(`${this.api}/pedidos/${id}/pago`, { accion }); }
   asignarRepartidor(id: number, id_repartidor: number): R<{}> { return this.http.put<Respuesta>(`${this.api}/pedidos/${id}/repartidor`, { id_repartidor }); }
   corregirUbicacion(id: number, latitud: number, longitud: number): R<{}> { return this.http.put<Respuesta>(`${this.api}/pedidos/${id}/ubicacion`, { latitud, longitud }); }

@@ -144,7 +144,7 @@ def adaptar_formato_pantallas(datos):
         'usar_saldo': bool(datos.get('usar_saldo', False)),
         'latitud': datos.get('latitud'),
         'longitud': datos.get('longitud')
-    }    
+    }
     return convertido, True
 
 
@@ -159,17 +159,14 @@ def crear_pedido():
         cantidades = leer_productos(datos)
 
         modalidad = datos.get('modalidad', 'domicilio')
-        direccion = str(datos.get('direccion_entrega', '') or '').strip()
-        telefono = str(datos.get('telefono_contacto', '') or '').strip()
+        direccion = str(datos.get('direccion_entrega') or datos.get('direccion') or '').strip()
+        telefono = str(datos.get('telefono_contacto') or datos.get('telefono') or '').strip() or '0000000000'
         metodo_pago = datos.get('metodo_pago')
         notas = str(datos.get('notas', '') or '').strip()
 
         # VALIDACIONES DE ENTREGA Y PAGO
         if modalidad == 'domicilio' and len(direccion) < 5:
             raise ErrorPedido('Escribe la dirección de entrega')
-
-        if not PATRON_TELEFONO.match(telefono):
-            raise ErrorPedido('El teléfono de contacto debe tener 10 dígitos')
 
         if metodo_pago not in ('tarjeta', 'transferencia'):
             raise ErrorPedido('Selecciona el método de pago')
@@ -186,9 +183,6 @@ def crear_pedido():
         cursor = mysql.connection.cursor()
         tipo, nivel = obtener_tipo_cliente(cursor)
 
-                # UBICACION DE ENTREGA, en este orden:
-        #   1) la marcada en el mapa  2) la dirección escrita, convertida en coordenadas
-        #   3) la guardada en el perfil  4) ninguna (el administrador la fija en el mapa)
         latitud, longitud = None, None
         if modalidad == 'domicilio':
             latitud, longitud = leer_ubicacion(datos)
@@ -269,23 +263,39 @@ def mis_pedidos():
         cursor.execute("""
             SELECT p.id_pedido, p.fecha_pedido, p.estado, p.estado_pago,
                    p.metodo_pago, p.modalidad, p.total, p.subtotal, p.costo_envio,
-                   p.direccion_entrega,
+                   p.direccion_entrega, c.id_usuario,
                    (p.estado = 'entregado' AND cal.id_calificacion IS NULL) AS puede_calificar,
                    GROUP_CONCAT(CONCAT(TRIM(TRAILING '.' FROM TRIM(TRAILING '0' FROM d.cantidad)), ' ', pr.nombre)
                                 ORDER BY d.id_detalle SEPARATOR ', ') AS resumen
             FROM pedidos p
+            JOIN clientes c ON c.id_cliente = p.id_cliente
             JOIN detalle_pedido d ON d.id_pedido = p.id_pedido
             JOIN productos pr ON pr.id_producto = d.id_producto
             LEFT JOIN calificaciones cal ON cal.id_pedido = p.id_pedido
             {filtro}
             GROUP BY p.id_pedido, p.fecha_pedido, p.estado, p.estado_pago,
                      p.metodo_pago, p.modalidad, p.total, p.subtotal, p.costo_envio,
-                     p.direccion_entrega, cal.id_calificacion
+                     p.direccion_entrega, c.id_usuario, cal.id_calificacion
             ORDER BY p.fecha_pedido DESC, p.id_pedido DESC
         """.format(filtro=filtro), parametros)
 
         pedidos = []
         for fila in cursor.fetchall():
+            motivo_cancelacion = None
+            if fila['estado'] == 'cancelado':
+                cursor.execute("""
+                    SELECT mensaje FROM notificaciones
+                    WHERE id_usuario = %s
+                      AND titulo = %s
+                      AND mensaje LIKE %s
+                    ORDER BY id_notificacion DESC
+                    LIMIT 1
+                """, (fila['id_usuario'], f"Pedido #{fila['id_pedido']}", '%Motivo:%'))
+                aviso = cursor.fetchone()
+                if aviso and 'Motivo:' in aviso['mensaje']:
+                    parte = aviso['mensaje'].split('Motivo:', 1)[1].strip()
+                    motivo_cancelacion = parte.split('. Si usaste saldo', 1)[0].rstrip('.').strip()
+
             pedidos.append({
                 'id_pedido': fila['id_pedido'],
                 'folio': f"NG-{fila['id_pedido']:04d}",
@@ -294,6 +304,7 @@ def mis_pedidos():
                 'subtotal': float(fila['subtotal']),
                 'costo_envio': float(fila['costo_envio']),
                 'estado': fila['estado'],
+                'motivo_cancelacion': motivo_cancelacion,
                 'estado_pago': fila['estado_pago'],
                 'metodo_pago': fila['metodo_pago'],
                 'modalidad': fila['modalidad'],
