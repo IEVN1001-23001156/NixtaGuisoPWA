@@ -3,16 +3,12 @@ from datetime import date
 from utils.precios import precio_para, nombre_tarifa
 
 
-# =====================================================================
-#  REGLAS DEL NEGOCIO PARA LOS PEDIDOS (documento, sección 7)
-# =====================================================================
-
-PEDIDO_MINIMO_B2C = 90.00          # pesos en productos
-KG_MINIMO_TORTILLA_B2B = 5         # kg de tortilla por entrega
+PEDIDO_MINIMO_B2C = 70.00
+KG_MINIMO_TORTILLA_B2B = 5
 COSTO_ENVIO_B2C = 30.00
 ENVIO_GRATIS_DESDE = 250.00
-DESCUENTO_PRIMER_PEDIDO = 15       # por ciento, solo clientes Hogar
-BONO_REFERIDO = 20.00              # saldo para quien invita y para el invitado
+DESCUENTO_PRIMER_PEDIDO = 15
+BONO_REFERIDO = 20.00
 
 
 class ErrorPedido(Exception):
@@ -231,7 +227,7 @@ def calcular_pedido(cursor, id_cliente, tipo, nivel, cantidades,
             (id_insumo,)
         )
         ins = cursor.fetchone()
-        if ins and ((not ins['activo']) or float(ins['existencia']) < requerido_insumo):
+        if ins and ((not ins['activo']) or float(ins['existencia']) < round(requerido_insumo, 4)):
             faltantes.append({
                 'id_insumo': id_insumo,
                 'nombre': f"{ins['nombre']} ({ins['unidad']})",

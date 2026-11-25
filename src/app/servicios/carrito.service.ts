@@ -155,16 +155,23 @@ export class CarritoService {
     producto: ProductoCatalogo,
     cantidadExtra: number,
     opciones?: OpcionesPaquete,
-    arma?: ArmaPaquete
+    arma?: ArmaPaquete,
+    soloProducto = false
   ): Promise<{ ok: boolean; mensaje?: string }> {
+    const mismosEnCarrito = soloProducto
+      ? []
+      : this.items()
+          .filter((i) => i.producto.id === producto.id)
+          .map((i) => ({
+            id_producto: i.producto.id,
+            cantidad: i.cantidad,
+            salsa: i.salsa ?? null,
+            agua: i.agua ?? null,
+            arma: i.arma ?? null,
+          }));
+
     const simulados = [
-      ...this.items().map((i) => ({
-        id_producto: i.producto.id,
-        cantidad: i.cantidad,
-        salsa: i.salsa ?? null,
-        agua: i.agua ?? null,
-        arma: i.arma ?? null,
-      })),
+      ...mismosEnCarrito,
       {
         id_producto: producto.id,
         cantidad: cantidadExtra,

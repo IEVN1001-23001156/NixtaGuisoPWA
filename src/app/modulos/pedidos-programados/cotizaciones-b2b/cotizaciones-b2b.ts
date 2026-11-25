@@ -53,7 +53,6 @@ export class CotizacionesB2b implements OnInit {
     const manana = new Date(Date.now() + 86400000);
     this.fechaRequerida = manana.toISOString().slice(0, 10);
 
-    // Precios del tipo de cuenta del usuario (Hogar o Negocio)
     const nivel = u?.cliente?.nivel_b2b ?? 1;
     const lista = await this.catalogoService.obtenerProductos(this.authRol.tipoCuenta(), nivel);
     const disponibles = lista.filter((p) => !p.agotado);
@@ -65,8 +64,30 @@ export class CotizacionesB2b implements OnInit {
     return this.productosDisponibles().find((p) => p.id === Number(id));
   }
 
+  pasoLinea(indice: number): number {
+    const u = (this.producto(this.lineas[indice]?.idProducto)?.unidad || '').toLowerCase();
+    return u.includes('1 kg') || u.trim() === 'kg' ? 0.5 : 1;
+  }
+
+  minimoLinea(indice: number): number {
+    return this.pasoLinea(indice);
+  }
+
+  normalizarLinea(indice: number): void {
+    const linea = this.lineas[indice];
+    if (!linea) return;
+    this.errorMensaje.set('');
+    const min = this.minimoLinea(indice);
+    const paso = this.pasoLinea(indice);
+    const num = Number(linea.cantidad);
+    if (!Number.isFinite(num) || num < min) {
+      linea.cantidad = min;
+      return;
+    }
+    linea.cantidad = paso === 0.5 ? Math.round(num * 2) / 2 : Math.round(num);
+  }
+
   agregarLinea(): void {
-    // Propone el primer producto que todavía no esté en la lista
     const usados = new Set(this.lineas.map((l) => Number(l.idProducto)));
     const siguiente = this.productosDisponibles().find((p) => !usados.has(p.id)) ?? this.productosDisponibles()[0];
     if (siguiente) this.lineas = [...this.lineas, { idProducto: siguiente.id, cantidad: 1 }];
@@ -87,6 +108,7 @@ export class CotizacionesB2b implements OnInit {
 
     this.errorMensaje.set('');
     this.mensajeEstado.set('');
+    this.lineas.forEach((_, idx) => this.normalizarLinea(idx));
 
     if (!this.authRol.usuario()) {
       this.errorMensaje.set('Inicia sesión para enviar tu cotización.');
@@ -100,6 +122,23 @@ export class CotizacionesB2b implements OnInit {
     if (items.length === 0) {
       this.errorMensaje.set('Agrega al menos un producto con su cantidad.');
       return;
+    }
+
+    for (const item of items) {
+      const prod = this.producto(item.id_producto);
+      if (prod?.agotado) {
+        this.errorMensaje.set(`${prod.nombre} está agotado o no tiene insumos suficientes.`);
+        return;
+      }
+      if (prod) {
+        const validacion = await this.carritoService.validarDisponibilidadAdicion(prod, item.cantidad);
+        if (!validacion.ok) {
+          this.errorMensaje.set(
+            validacion.mensaje || `Existencia o insumos insuficientes para ${prod.nombre}.`
+          );
+          return;
+        }
+      }
     }
 
     this.enviando.set(true);

@@ -415,6 +415,45 @@ def crear_receta():
             cursor.close()
 
 
+@admin_inventario_bp.route('/api/admin/recetas/<int:id_receta>', methods=['DELETE'])
+@admin_requerido
+def eliminar_receta(id_receta):
+    cursor = None
+
+    try:
+        cursor = mysql.connection.cursor()
+
+        cursor.execute("SELECT nombre FROM recetas WHERE id_receta = %s", (id_receta,))
+        receta = cursor.fetchone()
+        if not receta:
+            return jsonify({'exito': False, 'mensaje': 'La receta no existe'}), 404
+
+        cursor.execute("SELECT 1 FROM producciones WHERE id_receta = %s LIMIT 1", (id_receta,))
+        if cursor.fetchone():
+            return jsonify({
+                'exito': False,
+                'mensaje': 'No se puede eliminar porque ya tiene lotes producidos en el historial'
+            }), 400
+
+        cursor.execute("DELETE FROM receta_insumos WHERE id_receta = %s", (id_receta,))
+        cursor.execute("DELETE FROM recetas WHERE id_receta = %s", (id_receta,))
+        mysql.connection.commit()
+
+        return jsonify({
+            'exito': True,
+            'mensaje': f"Receta «{receta['nombre']}» eliminada"
+        }), 200
+
+    except Exception as e:
+        mysql.connection.rollback()
+        print("ERROR AL ELIMINAR RECETA:", str(e))
+        return jsonify({'exito': False, 'mensaje': 'No se pudo eliminar la receta'}), 500
+
+    finally:
+        if cursor:
+            cursor.close()
+
+
 @admin_inventario_bp.route('/api/admin/producciones', methods=['POST'])
 @admin_requerido
 def crear_produccion():

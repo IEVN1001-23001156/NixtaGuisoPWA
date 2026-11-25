@@ -71,6 +71,36 @@ export class CalendarioAgendamiento implements OnInit {
     await this.cargarDatos();
   }
 
+  productoSeleccionado(): ProductoCatalogo | undefined {
+    return this.productosDisponibles().find((p) => p.id === Number(this.idProductoSeleccionado));
+  }
+
+  pasoProducto(prod?: ProductoCatalogo): number {
+    const u = (prod?.unidad || '').toLowerCase();
+    return u.includes('1 kg') || u.trim() === 'kg' ? 0.5 : 1;
+  }
+
+  minimoProducto(prod?: ProductoCatalogo): number {
+    return this.pasoProducto(prod);
+  }
+
+  alCambiarProducto(): void {
+    this.errorMensaje.set('');
+    this.normalizarCantidad();
+  }
+
+  normalizarCantidad(): void {
+    const prod = this.productoSeleccionado();
+    const min = this.minimoProducto(prod);
+    const paso = this.pasoProducto(prod);
+    const num = Number(this.cantidad);
+    if (!Number.isFinite(num) || num < min) {
+      this.cantidad = min;
+      return;
+    }
+    this.cantidad = paso === 0.5 ? Math.round(num * 2) / 2 : Math.round(num);
+  }
+
   async cargarDatos(): Promise<void> {
     this.cargando.set(true);
     try {
@@ -105,6 +135,7 @@ export class CalendarioAgendamiento implements OnInit {
 
     this.errorMensaje.set('');
     this.mensajeEstado.set('');
+    this.normalizarCantidad();
 
     if (!this.authRol.usuario()) {
       this.errorMensaje.set('Inicia sesión para agendar un pedido programado.');
@@ -117,11 +148,29 @@ export class CalendarioAgendamiento implements OnInit {
     }
 
     const prod =
-      this.productosDisponibles().find((p) => p.id === Number(this.idProductoSeleccionado)) ??
+      this.productoSeleccionado() ??
       this.productosDisponibles()[0];
+
+    if (prod?.agotado) {
+      this.errorMensaje.set(`${prod.nombre} está agotado o no tiene insumos suficientes.`);
+      return;
+    }
 
     this.guardando.set(true);
     try {
+      if (prod) {
+        const validacion = await this.carritoService.validarDisponibilidadAdicion(
+          prod,
+          Number(this.cantidad)
+        );
+        if (!validacion.ok) {
+          this.errorMensaje.set(
+            validacion.mensaje || 'No hay existencia o insumos suficientes para esa cantidad.'
+          );
+          return;
+        }
+      }
+
       const resp = await firstValueFrom(
         this.http.post<RespuestaProgramaciones>(
           this.apiUrl,
@@ -165,4 +214,4 @@ export class CalendarioAgendamiento implements OnInit {
     };
     return mapa[(freq || '').toLowerCase()] ?? freq;
   }
-}
+} 

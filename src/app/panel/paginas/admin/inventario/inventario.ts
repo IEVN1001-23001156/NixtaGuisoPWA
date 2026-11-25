@@ -181,6 +181,25 @@ export class Inventario implements OnInit {
     }).subscribe(this.resultado('Receta actualizada', () => this.recetaEditada.set(null)));
   }
 
+  eliminarReceta(receta?: Receta): void {
+    const objetivo = receta ?? this.recetaEditada();
+    if (!objetivo) return;
+    if (!confirm(`¿Eliminar la receta "${objetivo.nombre}" (${objetivo.producto})? Esta acción no se puede deshacer.`)) {
+      return;
+    }
+
+    this.admin.eliminarReceta(objetivo.id_receta).subscribe(
+      this.resultado('Receta eliminada', () => {
+        if (this.recetaEditada()?.id_receta === objetivo.id_receta) {
+          this.recetaEditada.set(null);
+        }
+        if (Number(this.produccion.id_receta) === objetivo.id_receta) {
+          this.produccion.id_receta = 0;
+        }
+      })
+    );
+  }
+
   unidadInsumo(id: number): string { return this.insumos().find(i => i.id_insumo === Number(id))?.unidad ?? ''; }
 
   // ---------- Mermas ----------

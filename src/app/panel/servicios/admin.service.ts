@@ -69,6 +69,7 @@ export class AdminService {
   }): R<{ id_receta?: number }> {
     return this.http.post<Respuesta & { id_receta?: number }>(`${this.api}/recetas`, datos);
   }
+  eliminarReceta(id: number): R<{}> { return this.http.delete<Respuesta>(`${this.api}/recetas/${id}`); }
   producciones(): R<{ producciones: Produccion[] }> { return this.http.get<Respuesta & { producciones: Produccion[] }>(`${this.api}/producciones`); }
   registrarProduccion(datos: { id_receta: number; num_lotes: number; notas?: string }): R<{ cantidad_producida: number }> {
     return this.http.post<Respuesta & { cantidad_producida: number }>(`${this.api}/producciones`, datos);

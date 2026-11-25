@@ -31,6 +31,7 @@
             <label class="block text-xs font-bold text-cacao mb-1 ml-1">Producto base</label>
             <select
               [(ngModel)]="idProductoSeleccionado"
+              (ngModelChange)="alCambiarProducto()"
               name="idProductoSeleccionado"
               class="w-full px-4 py-3 rounded-xl bg-crema lg:bg-white text-cacao text-sm border border-cacao/15 focus:outline-none focus:ring-2 focus:ring-maiz"
             >
@@ -44,9 +45,11 @@
             <label class="block text-xs font-bold text-cacao mb-1 ml-1">Cantidad</label>
             <input
               type="number"
-              min="1"
-              step="1"
+              [min]="minimoProducto(productoSeleccionado())"
+              [step]="pasoProducto(productoSeleccionado())"
               [(ngModel)]="cantidad"
+              (ngModelChange)="errorMensaje.set('')"
+              (blur)="normalizarCantidad()"
               name="cantidad"
               required
               class="w-full px-4 py-3 rounded-xl bg-crema lg:bg-white text-cacao text-sm border border-cacao/15 focus:outline-none focus:ring-2 focus:ring-maiz"
@@ -103,7 +106,7 @@
         </div>
 
         @if (errorMensaje()) {
-          <p class="text-xs font-bold text-salsa px-1">{{ errorMensaje() }}</p>
+          <p class="rounded-2xl bg-red-50 border border-red-200 px-4 py-2.5 text-xs font-bold text-red-700">{{ errorMensaje() }}</p>
         }
 
         @if (mensajeEstado()) {
@@ -115,7 +118,7 @@
           [disabled]="enviando()"
           class="w-full sm:w-auto px-7 py-3.5 rounded-full bg-milpa text-white text-sm font-bold shadow hover:bg-milpa/90 disabled:opacity-60 transition cursor-pointer"
         >
-          {{ enviando() ? 'Registrando...' : 'Registrar pedido especial' }}
+          {{ enviando() ? 'Verificando y registrando...' : 'Registrar pedido especial' }}
         </button>
       </form>
     </main>
